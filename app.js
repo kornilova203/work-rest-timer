@@ -67,7 +67,6 @@ class ChessTimer {
     this.resetButton = document.getElementById('reset');
     
     // Timer state
-    this.activePlayerId = null;
     this.timer = null;
     this.isRunning = false;
     
@@ -85,20 +84,20 @@ class ChessTimer {
     // Setup player 1 click handler
     this.player1.element.addEventListener('click', () => {
       if (!this.isRunning) {
-        this.activePlayerId = 2; // Set player 2 as active
+        this.setActivePlayer(this.player2);
         this.start();
-      } else if (this.activePlayerId === 1) {
-        this.switchPlayer(); // Switch from player 1 to player 2
+      } else if (this.player1.isActive) {
+        this.switchPlayer();
       }
     });
     
     // Setup player 2 click handler
     this.player2.element.addEventListener('click', () => {
       if (!this.isRunning) {
-        this.activePlayerId = 1; // Set player 1 as active
+        this.setActivePlayer(this.player1);
         this.start();
-      } else if (this.activePlayerId === 2) {
-        this.switchPlayer(); // Switch from player 2 to player 1
+      } else if (this.player2.isActive) {
+        this.switchPlayer();
       }
     });
     
@@ -120,16 +119,16 @@ class ChessTimer {
         e.preventDefault();
       } else if (e.key === '1') {
         if (!this.isRunning) {
-          this.activePlayerId = 2; // Pressing 1 starts player 2's timer
+          this.setActivePlayer(this.player2); // Pressing 1 starts player 2's timer
           this.start();
-        } else if (this.activePlayerId === 1) {
+        } else if (this.player1.isActive) {
           this.switchPlayer(); // Switch from player 1 to player 2
         }
       } else if (e.key === '2') {
         if (!this.isRunning) {
-          this.activePlayerId = 1; // Pressing 2 starts player 1's timer
+          this.setActivePlayer(this.player1); // Pressing 2 starts player 1's timer
           this.start();
-        } else if (this.activePlayerId === 2) {
+        } else if (this.player2.isActive) {
           this.switchPlayer(); // Switch from player 2 to player 1
         }
       } else if (e.key === 'r' || e.key === 'R') {
@@ -141,26 +140,24 @@ class ChessTimer {
   }
   
   getActivePlayer() {
-    if (!this.activePlayerId) return null;
-    return this.activePlayerId === 1 ? this.player1 : this.player2;
+    return this.players.find(player => player.isActive) || null;
   }
   
   getOpponentPlayer(player) {
     return player === this.player1 ? this.player2 : this.player1;
   }
   
+  hasActivePlayer() {
+    return this.players.some(player => player.isActive);
+  }
+  
+  setActivePlayer(player) {
+    this.players.forEach(p => p.setActive(p === player));
+  }
+  
   updateDisplay() {
-    // Update player states
-    this.players.forEach(player => {
-      if (this.activePlayerId) {
-        player.setActive(player.id === this.activePlayerId);
-      } else {
-        player.setActive(null); // No active state
-      }
-    });
-    
     // Show/hide controls based on timer state
-    if (this.isRunning || (this.activePlayerId !== null && !this.isRunning)) {
+    if (this.isRunning || (this.hasActivePlayer() && !this.isRunning)) {
       this.controlsElement.classList.remove('hidden');
     } else {
       this.controlsElement.classList.add('hidden');
@@ -170,7 +167,12 @@ class ChessTimer {
   start() {
     if (!this.isRunning) {
       this.isRunning = true;
-      this.activePlayerId = this.activePlayerId || 1; // Default to player 1 if not set
+      
+      // If no player is active, default to player 1
+      if (!this.hasActivePlayer()) {
+        this.setActivePlayer(this.player1);
+      }
+      
       this.startTimer();
       this.controlsElement.classList.remove('hidden');
       this.pauseButton.textContent = 'Pause';
@@ -184,7 +186,7 @@ class ChessTimer {
       clearInterval(this.timer);
       this.timer = null;
       this.pauseButton.textContent = 'Resume';
-    } else if (this.activePlayerId !== null) {
+    } else if (this.hasActivePlayer()) {
       // Resume the timer
       this.isRunning = true;
       this.startTimer();
@@ -195,15 +197,18 @@ class ChessTimer {
   reset() {
     this.pause();
     this.players.forEach(player => player.reset());
-    this.activePlayerId = null;
     this.controlsElement.classList.add('hidden');
     this.updateDisplay();
   }
   
   switchPlayer() {
     if (this.isRunning) {
-      this.activePlayerId = this.activePlayerId === 1 ? 2 : 1;
-      this.updateDisplay();
+      const activePlayer = this.getActivePlayer();
+      if (activePlayer) {
+        const opponent = this.getOpponentPlayer(activePlayer);
+        this.setActivePlayer(opponent);
+        this.updateDisplay();
+      }
     }
   }
   
@@ -216,20 +221,20 @@ class ChessTimer {
       if (activePlayer) {
         const remainingTime = activePlayer.decrementTime();
         if (remainingTime <= 0) {
-          this.handleTimeout();
+          this.handleTimeout(activePlayer);
         }
       }
     }, 1000);
   }
   
-  handleTimeout() {
+  handleTimeout(player) {
     // Stop the timer
     this.isRunning = false;
     clearInterval(this.timer);
     this.timer = null;
     
     setTimeout(() => {
-      alert(`Player ${this.activePlayerId} time is up!`);
+      alert(`Player ${player.id} time is up!`);
     }, 100);
   }
 }
