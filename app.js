@@ -277,10 +277,6 @@ class ChessTimer {
       clearTimeout(this.timeoutId);
       this.timeoutId = null;
     }
-    
-    setTimeout(() => {
-      alert(`Player ${player.id} time is up!`);
-    }, 100);
   }
 
   // Method to update player time (used by settings)
