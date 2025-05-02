@@ -192,10 +192,6 @@ button:hover {
 }
 
 @media (orientation: portrait) {
-  #player1 {
-    transform: rotate(180deg);
-  }
-  
   .timer {
     max-height: 40vh;
   }
