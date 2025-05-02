@@ -71,11 +71,7 @@ class ChessPlayer {
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
     
-    if (hours > 0) {
-      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    } else {
-      return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    }
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   }
 }
 
@@ -103,8 +99,11 @@ class ChessTimer {
   }
   
   init() {
-    // Initialize all players' displays
-    this.players.forEach(player => player.updateDisplay());
+    // Initialize all players' displays with proper formatting
+    this.players.forEach(player => {
+      // Force an update of the time display with the correct format
+      player.updateDisplay();
+    });
     
     // Set up control buttons
     this.resetButton.addEventListener('click', () => this.reset());
@@ -295,16 +294,18 @@ class ChessTimer {
 
 // Initialize the timer when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', () => {
-  // Load saved settings if they exist
-  const player1Time = localStorage.getItem('player1Time') || 10;
-  const player2Time = localStorage.getItem('player2Time') || 10;
-
-  const initialTimeInMinutes = 10;
-  // Load player-specific times if available
-  const player1Minutes = localStorage.getItem('player1Time') || initialTimeInMinutes;
-  const player2Minutes = localStorage.getItem('player2Time') || initialTimeInMinutes;
+  const initialTimeInSeconds = 10 * 60; // 10 minutes in seconds
+  
+  // Load player-specific times in seconds if available, default to 10 minutes (600 seconds)
+  const player1TimeSeconds = parseFloat(localStorage.getItem('player1Time')) || initialTimeInSeconds;
+  const player2TimeSeconds = parseFloat(localStorage.getItem('player2Time')) || initialTimeInSeconds;
+  
+  // Convert seconds to minutes for the ChessTimer constructor
+  const player1TimeMinutes = player1TimeSeconds / 60;
+  const player2TimeMinutes = player2TimeSeconds / 60;
+  
   // Initialize with saved or default times
-  const timer = new ChessTimer(player1Minutes, player2Minutes);
+  const timer = new ChessTimer(player1TimeMinutes, player2TimeMinutes);
   
   // Set up settings modal functionality
   const settingsButton = document.getElementById('settings');
@@ -314,9 +315,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const player1TimeInput = document.getElementById('player1-time');
   const player2TimeInput = document.getElementById('player2-time');
   
-  // Set initial values from localStorage
-  player1TimeInput.value = player1Time;
-  player2TimeInput.value = player2Time;
+  // Set initial values from localStorage - convert seconds to HH:MM:SS format
+  const setTimeInputValue = (input, seconds) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    input.value = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+  
+  setTimeInputValue(player1TimeInput, player1TimeSeconds);
+  setTimeInputValue(player2TimeInput, player2TimeSeconds);
   
   // Open settings modal
   settingsButton.addEventListener('click', () => {
@@ -334,16 +342,33 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Save settings
   saveSettingsButton.addEventListener('click', () => {
-    const player1NewTime = parseInt(player1TimeInput.value) || 10;
-    const player2NewTime = parseInt(player2TimeInput.value) || 10;
+    // Parse time values directly to seconds from HH:MM:SS format
+    const parseTimeToSeconds = (timeString) => {
+      let parts = timeString.split(':').map(val => parseInt(val) || 0);
+      
+      // Handle both HH:MM:SS and HH:MM formats
+      if (parts.length === 2) {
+        // Treat as HH:MM format
+        const [hours, minutes] = parts;
+        return (hours * 60 * 60) + (minutes * 60);
+      } else {
+        // HH:MM:SS format
+        const [hours, minutes, seconds] = parts;
+        return (hours * 60 * 60) + (minutes * 60) + seconds;
+      }
+    };
     
-    // Save to localStorage
-    localStorage.setItem('player1Time', player1NewTime);
-    localStorage.setItem('player2Time', player2NewTime);
+    // Get time in seconds directly
+    const player1NewTimeSeconds = parseTimeToSeconds(player1TimeInput.value);
+    const player2NewTimeSeconds = parseTimeToSeconds(player2TimeInput.value);
     
-    // Update timer with new values
-    timer.updatePlayerTime(timer.players[0], player1NewTime * 60 * 1000);
-    timer.updatePlayerTime(timer.players[1], player2NewTime * 60 * 1000);
+    // Save to localStorage in seconds
+    localStorage.setItem('player1Time', player1NewTimeSeconds);
+    localStorage.setItem('player2Time', player2NewTimeSeconds);
+    
+    // Update timer with new values - convert seconds to milliseconds
+    timer.updatePlayerTime(timer.players[0], player1NewTimeSeconds * 1000);
+    timer.updatePlayerTime(timer.players[1], player2NewTimeSeconds * 1000);
 
     if (timer.isRunning()) {
       timer.reset();
