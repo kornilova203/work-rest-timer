@@ -77,9 +77,9 @@ class ChessPlayer {
 
 // Chess timer functionality
 class ChessTimer {
-  constructor(player1Minutes, player2Minutes) {
-    const player1TimeInMs = player1Minutes * 60 * 1000;
-    const player2TimeInMs = player2Minutes * 60 * 1000;
+  constructor(player1Seconds, player2Seconds) {
+    const player1TimeInMs = player1Seconds * 1000;
+    const player2TimeInMs = player2Seconds * 1000;
     
     // Initialize players
     this.player1 = new ChessPlayer(1, player1TimeInMs);
@@ -285,7 +285,8 @@ class ChessTimer {
   }
 
   // Method to update player time (used by settings)
-  updatePlayerTime(player, timeInMs) {
+  updatePlayerTime(player, timeInSeconds) {
+    const timeInMs = timeInSeconds * 1000;
     player.initialTime = timeInMs;
     player.timeRemaining = timeInMs;
     player.updateDisplay();
@@ -300,12 +301,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const player1TimeSeconds = parseFloat(localStorage.getItem('player1Time')) || initialTimeInSeconds;
   const player2TimeSeconds = parseFloat(localStorage.getItem('player2Time')) || initialTimeInSeconds;
   
-  // Convert seconds to minutes for the ChessTimer constructor
-  const player1TimeMinutes = player1TimeSeconds / 60;
-  const player2TimeMinutes = player2TimeSeconds / 60;
-  
-  // Initialize with saved or default times
-  const timer = new ChessTimer(player1TimeMinutes, player2TimeMinutes);
+  // Initialize with saved or default times in seconds
+  const timer = new ChessTimer(player1TimeSeconds, player2TimeSeconds);
   
   // Set up settings modal functionality
   const settingsButton = document.getElementById('settings');
@@ -366,9 +363,9 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('player1Time', player1NewTimeSeconds);
     localStorage.setItem('player2Time', player2NewTimeSeconds);
     
-    // Update timer with new values - convert seconds to milliseconds
-    timer.updatePlayerTime(timer.players[0], player1NewTimeSeconds * 1000);
-    timer.updatePlayerTime(timer.players[1], player2NewTimeSeconds * 1000);
+    // Update timer with new values in seconds
+    timer.updatePlayerTime(timer.players[0], player1NewTimeSeconds);
+    timer.updatePlayerTime(timer.players[1], player2NewTimeSeconds);
 
     if (timer.isRunning()) {
       timer.reset();
