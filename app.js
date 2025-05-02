@@ -1,9 +1,9 @@
 // Player class to encapsulate individual player logic
 class ChessPlayer {
-  constructor(id, initialTimeInSeconds) {
+  constructor(id, initialTimeInMs) {
     this.id = id;
-    this.initialTime = initialTimeInSeconds;
-    this.timeRemaining = initialTimeInSeconds;
+    this.initialTime = initialTimeInMs; // Initial time in milliseconds
+    this.timeRemaining = initialTimeInMs; // Current time in milliseconds
     this.element = document.getElementById(`player${id}`);
     this.timeElement = this.element.querySelector('.time');
     this.isActive = false;
@@ -15,11 +15,26 @@ class ChessPlayer {
     // Events will be handled by the timer
   }
   
-  decrementTime() {
-    if (this.timeRemaining > 0) {
-      this.timeRemaining--;
+  /**
+   * Updates the player's remaining time based on elapsed milliseconds
+   * @param {number} elapsedMs - Milliseconds elapsed since last update
+   * @returns {number} Remaining time in milliseconds
+   */
+  updateTime(elapsedMs) {
+    if (elapsedMs > 0 && this.timeRemaining > 0) {
+      // Ensure we don't go below zero
+      this.timeRemaining = Math.max(0, this.timeRemaining - elapsedMs);
+      this.updateDisplay();
     }
-    this.updateDisplay();
+    
+    return this.timeRemaining;
+  }
+  
+  /**
+   * Get the remaining time in milliseconds
+   * @returns {number} Time remaining in milliseconds
+   */
+  getTimeRemaining() {
     return this.timeRemaining;
   }
   
@@ -44,21 +59,29 @@ class ChessPlayer {
     this.timeElement.textContent = this.formatTime(this.timeRemaining);
   }
   
-  formatTime(seconds) {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  /**
+   * Format milliseconds into MM:SS display format
+   * @param {number} ms - Time in milliseconds
+   * @returns {string} Formatted time string
+   */
+  formatTime(ms) {
+    // Convert to seconds and round down to ensure we don't display more time than available
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   }
 }
 
 // Chess timer functionality
 class ChessTimer {
   constructor(initialTimeInMinutes = 10) {
-    const initialTimeInSeconds = initialTimeInMinutes * 60;
+    // Convert minutes to milliseconds (1 minute = 60 seconds = 60,000 milliseconds)
+    const initialTimeInMs = initialTimeInMinutes * 60 * 1000;
     
     // Initialize players
-    this.player1 = new ChessPlayer(1, initialTimeInSeconds);
-    this.player2 = new ChessPlayer(2, initialTimeInSeconds);
+    this.player1 = new ChessPlayer(1, initialTimeInMs);
+    this.player2 = new ChessPlayer(2, initialTimeInMs);
     this.players = [this.player1, this.player2];
     
     // Controls
@@ -68,6 +91,7 @@ class ChessTimer {
     
     // Timer state
     this.timer = null;
+    this.timeoutId = null;
     
     this.init();
   }
@@ -107,7 +131,10 @@ class ChessTimer {
     
     this.updateDisplay();
   }
-  
+
+  /**
+   * @returns {ChessPlayer|null}
+   */
   getActivePlayer() {
     return this.players.find(player => player.isActive) || null;
   }
@@ -151,7 +178,12 @@ class ChessTimer {
   
   pause() {
     if (this.isRunning()) {
-      clearInterval(this.timer);
+      // Cancel animation frame and clear timeout
+      cancelAnimationFrame(this.timer);
+      if (this.timeoutId) {
+        clearTimeout(this.timeoutId);
+        this.timeoutId = null;
+      }
       this.timer = null;
       this.pauseButton.textContent = 'Resume';
     } else if (this.hasActivePlayer()) {
@@ -169,24 +201,68 @@ class ChessTimer {
   }
   
   startTimer() {
-    clearInterval(this.timer);
+    // Cancel any existing animation frame and clear timeout
+    if (this.timer) {
+      cancelAnimationFrame(this.timer);
+    }
+    if (this.timeoutId) {
+      clearTimeout(this.timeoutId);
+    }
+    
     this.updateDisplay();
     
-    this.timer = setInterval(() => {
-      const activePlayer = this.getActivePlayer();
-      if (activePlayer) {
-        const remainingTime = activePlayer.decrementTime();
-        if (remainingTime <= 0) {
-          this.handleTimeout(activePlayer);
+    // Record the start time when we begin the timer
+    let lastUpdateTime = Date.now();
+    // Minimum delay between updates (in ms)
+    const UPDATE_DELAY = 50; 
+    
+    // Use animation frame with throttling for efficient updates
+    const updateTimer = () => {
+      const now = Date.now();
+      const elapsedMs = now - lastUpdateTime;
+      
+      // Only update if enough time has passed (at least 50ms)
+      if (elapsedMs >= UPDATE_DELAY) {
+        const activePlayer = this.getActivePlayer();
+        if (activePlayer) {
+          // Update based on actual elapsed time
+          const remainingTimeMs = activePlayer.updateTime(elapsedMs);
+          
+          if (remainingTimeMs <= 0) {
+            this.handleTimeout(activePlayer);
+            return; // Stop the timer
+          }
+          
+          // Update the last update time
+          lastUpdateTime = now;
+          
+          // Update display after time change
+          this.updateDisplay();
         }
       }
-    }, 1000);
+      
+      // Schedule the next update using setTimeout + requestAnimationFrame
+      // This creates a controlled frame rate without excessive updates
+      this.timeoutId = setTimeout(() => {
+        this.timer = requestAnimationFrame(updateTimer);
+      }, Math.max(0, UPDATE_DELAY - elapsedMs));
+    };
+    
+    // Start the timer loop
+    this.timer = requestAnimationFrame(updateTimer);
   }
   
   handleTimeout(player) {
-    // Stop the timer
-    clearInterval(this.timer);
-    this.timer = null;
+    // Stop the timer - cancel both animation frame and timeout
+    if (this.timer) {
+      cancelAnimationFrame(this.timer);
+      this.timer = null;
+    }
+    
+    if (this.timeoutId) {
+      clearTimeout(this.timeoutId);
+      this.timeoutId = null;
+    }
     
     setTimeout(() => {
       alert(`Player ${player.id} time is up!`);
