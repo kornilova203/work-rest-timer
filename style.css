@@ -83,7 +83,6 @@ body {
   opacity: 1;
   transition: opacity 0.3s;
   width: auto;
-  max-width: 800px;
 }
 
 .settings-button {
@@ -92,6 +91,23 @@ body {
   top: 50%;
   transform: translateY(-50%);
   z-index: 5;
+}
+
+/* Responsive layout for small screens */
+@media (max-width: 600px) {
+  .controls-wrapper {
+    flex-direction: column;
+    height: auto;
+    gap: 5px;
+    padding: 5px 0;
+  }
+  
+  .settings-button {
+    position: static;
+    transform: none;
+    margin-top: 5px;
+    order: 2;
+  }
 }
 
 .hidden {
