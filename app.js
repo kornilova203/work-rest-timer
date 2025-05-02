@@ -60,16 +60,22 @@ class ChessPlayer {
   }
   
   /**
-   * Format milliseconds into MM:SS display format
+   * Format milliseconds into HH:MM:SS display format
    * @param {number} ms - Time in milliseconds
    * @returns {string} Formatted time string
    */
   formatTime(ms) {
     // Convert to seconds and round down to ensure we don't display more time than available
     const totalSeconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    
+    if (hours > 0) {
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    } else {
+      return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
   }
 }
 
