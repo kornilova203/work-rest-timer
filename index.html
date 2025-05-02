@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#000000">
+  <title>Chess Timer</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+  <div class="container">
+    <div class="timer-container">
+      <div id="player1" class="timer">
+        <div class="time">10:00</div>
+      </div>
+      <div id="controls" class="controls hidden">
+        <button id="reset">Reset</button>
+        <button id="pause">Pause</button>
+      </div>
+      <div id="player2" class="timer">
+        <div class="time">10:00</div>
+      </div>
+    </div>
+  </div>
+  <script src="app.js"></script>
+  <script>
+    // Register service worker for PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js');
+      });
+    }
+  </script>
+</body>
+</html>
