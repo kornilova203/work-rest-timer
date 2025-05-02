@@ -194,7 +194,21 @@ class ChessTimer {
   }
   
   reset() {
-    this.pause();
+    // Stop the timer directly instead of using pause()
+    if (this.timer) {
+      cancelAnimationFrame(this.timer);
+      this.timer = null;
+    }
+    
+    if (this.timeoutId) {
+      clearTimeout(this.timeoutId);
+      this.timeoutId = null;
+    }
+    
+    // Reset button state
+    this.pauseButton.textContent = 'Pause';
+    
+    // Reset players
     this.players.forEach(player => player.reset());
     this.controlsElement.classList.add('hidden');
     this.updateDisplay();
