@@ -69,6 +69,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
 .controls {
@@ -81,8 +82,16 @@ body {
   visibility: visible;
   opacity: 1;
   transition: opacity 0.3s;
-  width: 100%;
+  width: auto;
   max-width: 800px;
+}
+
+.settings-button {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
 }
 
 .hidden {
@@ -105,6 +114,90 @@ button {
 }
 
 button:hover {
+  opacity: 1;
+}
+
+/* Modal styles */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  transition: opacity 0.3s;
+}
+
+.modal-content {
+  background-color: #222222;
+  width: 90%;
+  max-width: 400px;
+  color: white;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  border-bottom: 1px solid #333333;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: normal;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.close-button {
+  font-size: 24px;
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 0 5px;
+  line-height: 1;
+}
+
+.time-settings {
+  padding: 20px;
+}
+
+.player-time-setting {
+  margin-bottom: 20px;
+}
+
+.player-time-setting label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.player-time-setting input {
+  width: 100%;
+  padding: 10px;
+  background-color: #333333;
+  border: none;
+  color: white;
+  font-size: 16px;
+}
+
+.modal-footer {
+  padding: 15px;
+  text-align: center;
+  border-top: 1px solid #333333;
+}
+
+#save-settings {
+  padding: 10px 40px;
+  background-color: #444444;
   opacity: 1;
 }
 

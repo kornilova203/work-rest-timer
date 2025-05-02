@@ -75,13 +75,13 @@ class ChessPlayer {
 
 // Chess timer functionality
 class ChessTimer {
-  constructor(initialTimeInMinutes = 10) {
-    // Convert minutes to milliseconds (1 minute = 60 seconds = 60,000 milliseconds)
-    const initialTimeInMs = initialTimeInMinutes * 60 * 1000;
+  constructor(player1Minutes, player2Minutes) {
+    const player1TimeInMs = player1Minutes * 60 * 1000;
+    const player2TimeInMs = player2Minutes * 60 * 1000;
     
     // Initialize players
-    this.player1 = new ChessPlayer(1, initialTimeInMs);
-    this.player2 = new ChessPlayer(2, initialTimeInMs);
+    this.player1 = new ChessPlayer(1, player1TimeInMs);
+    this.player2 = new ChessPlayer(2, player2TimeInMs);
     this.players = [this.player1, this.player2];
     
     // Controls
@@ -156,7 +156,7 @@ class ChessTimer {
   }
   
   updateDisplay() {
-    // Show/hide controls based on timer state
+    // Show/hide pause and reset controls based on timer state
     if (this.isRunning() || this.hasActivePlayer()) {
       this.controlsElement.classList.remove('hidden');
     } else {
@@ -282,9 +282,72 @@ class ChessTimer {
       alert(`Player ${player.id} time is up!`);
     }, 100);
   }
+
+  // Method to update player time (used by settings)
+  updatePlayerTime(player, timeInMs) {
+    player.initialTime = timeInMs;
+    player.timeRemaining = timeInMs;
+    player.updateDisplay();
+  }
 }
 
 // Initialize the timer when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', () => {
-  new ChessTimer(10); // Default 10 minutes per player
+  // Load saved settings if they exist
+  const player1Time = localStorage.getItem('player1Time') || 10;
+  const player2Time = localStorage.getItem('player2Time') || 10;
+
+  const initialTimeInMinutes = 10;
+  // Load player-specific times if available
+  const player1Minutes = localStorage.getItem('player1Time') || initialTimeInMinutes;
+  const player2Minutes = localStorage.getItem('player2Time') || initialTimeInMinutes;
+  // Initialize with saved or default times
+  const timer = new ChessTimer(player1Minutes, player2Minutes);
+  
+  // Set up settings modal functionality
+  const settingsButton = document.getElementById('settings');
+  const settingsModal = document.getElementById('settings-modal');
+  const closeSettingsButton = document.getElementById('close-settings');
+  const saveSettingsButton = document.getElementById('save-settings');
+  const player1TimeInput = document.getElementById('player1-time');
+  const player2TimeInput = document.getElementById('player2-time');
+  
+  // Set initial values from localStorage
+  player1TimeInput.value = player1Time;
+  player2TimeInput.value = player2Time;
+  
+  // Open settings modal
+  settingsButton.addEventListener('click', () => {
+    // Pause the timer if it's running
+    if (timer.isRunning()) {
+      timer.pause();
+    }
+    settingsModal.classList.remove('hidden');
+  });
+  
+  // Close settings modal
+  closeSettingsButton.addEventListener('click', () => {
+    settingsModal.classList.add('hidden');
+  });
+  
+  // Save settings
+  saveSettingsButton.addEventListener('click', () => {
+    const player1NewTime = parseInt(player1TimeInput.value) || 10;
+    const player2NewTime = parseInt(player2TimeInput.value) || 10;
+    
+    // Save to localStorage
+    localStorage.setItem('player1Time', player1NewTime);
+    localStorage.setItem('player2Time', player2NewTime);
+    
+    // Update timer with new values
+    timer.updatePlayerTime(timer.players[0], player1NewTime * 60 * 1000);
+    timer.updatePlayerTime(timer.players[1], player2NewTime * 60 * 1000);
+
+    if (this.isRunning()) {
+      this.reset();
+    }
+    
+    // Close the modal
+    settingsModal.classList.add('hidden');
+  });
 });
