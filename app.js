@@ -1,111 +1,47 @@
-// Chess timer functionality
-class ChessTimer {
-  constructor(initialTimeInMinutes = 10) {
-    this.initialTime = initialTimeInMinutes * 60; // Convert to seconds
-    this.player1Time = this.initialTime;
-    this.player2Time = this.initialTime;
+// Player class to encapsulate individual player logic
+class ChessPlayer {
+  constructor(id, initialTimeInSeconds) {
+    this.id = id;
+    this.initialTime = initialTimeInSeconds;
+    this.timeRemaining = initialTimeInSeconds;
+    this.element = document.getElementById(`player${id}`);
+    this.timeElement = this.element.querySelector('.time');
+    this.isActive = false;
     
-    this.player1Element = document.getElementById('player1');
-    this.player2Element = document.getElementById('player2');
-    this.player1TimeElement = this.player1Element.querySelector('.time');
-    this.player2TimeElement = this.player2Element.querySelector('.time');
-    
-    this.controlsElement = document.getElementById('controls');
-    this.pauseButton = document.getElementById('pause');
-    this.resetButton = document.getElementById('reset');
-    
-    this.activePlayer = null;
-    this.timer = null;
-    this.isRunning = false;
-    
-    this.init();
+    this.setupEventListeners();
   }
   
-  init() {
+  setupEventListeners() {
+    // Events will be handled by the timer
+  }
+  
+  decrementTime() {
+    if (this.timeRemaining > 0) {
+      this.timeRemaining--;
+    }
     this.updateDisplay();
+    return this.timeRemaining;
+  }
+  
+  reset() {
+    this.timeRemaining = this.initialTime;
+    this.setActive(false);
+    this.updateDisplay();
+  }
+  
+  setActive(isActive) {
+    this.isActive = isActive;
+    this.element.classList.remove('active', 'inactive');
     
-    this.resetButton.addEventListener('click', () => this.reset());
-    this.pauseButton.addEventListener('click', () => this.pause());
-    
-    // Clicking on player1's timer starts player2's timer
-    this.player1Element.addEventListener('click', () => {
-      if (!this.isRunning) {
-        this.activePlayer = 2; // Set player 2 as active
-        this.start();
-      } else if (this.activePlayer === 1) {
-        this.switchPlayer(); // Switch from player 1 to player 2
-      }
-    });
-    
-    // Clicking on player2's timer starts player1's timer
-    this.player2Element.addEventListener('click', () => {
-      if (!this.isRunning) {
-        this.activePlayer = 1; // Set player 1 as active
-        this.start();
-      } else if (this.activePlayer === 2) {
-        this.switchPlayer(); // Switch from player 2 to player 1
-      }
-    });
-    
-    // Add sound when timer is clicked (optional)
-    const clickSound = () => {
-      if (this.isRunning) {
-        navigator.vibrate && navigator.vibrate(30);
-      }
-    };
-    
-    this.player1Element.addEventListener('click', clickSound);
-    this.player2Element.addEventListener('click', clickSound);
-    
-    // Enable keyboard controls (space to pause/resume, 1 and 2 to activate player timer)
-    document.addEventListener('keydown', (e) => {
-      if (e.key === ' ' || e.code === 'Space') {
-        this.pause(); // The pause method now handles both pausing and resuming
-        e.preventDefault();
-      } else if (e.key === '1') {
-        if (!this.isRunning) {
-          this.activePlayer = 2; // Pressing 1 starts player 2's timer
-          this.start();
-        } else if (this.activePlayer === 1) {
-          this.switchPlayer(); // Switch from player 1 to player 2
-        }
-      } else if (e.key === '2') {
-        if (!this.isRunning) {
-          this.activePlayer = 1; // Pressing 2 starts player 1's timer
-          this.start();
-        } else if (this.activePlayer === 2) {
-          this.switchPlayer(); // Switch from player 2 to player 1
-        }
-      } else if (e.key === 'r' || e.key === 'R') {
-        this.reset();
-      }
-    });
+    if (isActive) {
+      this.element.classList.add('active');
+    } else if (isActive === false) { // Could be null which means no active state
+      this.element.classList.add('inactive');
+    }
   }
   
   updateDisplay() {
-    this.player1TimeElement.textContent = this.formatTime(this.player1Time);
-    this.player2TimeElement.textContent = this.formatTime(this.player2Time);
-    
-    this.player1Element.classList.remove('active', 'inactive');
-    this.player2Element.classList.remove('active', 'inactive');
-    
-    // Show/hide controls based on timer state
-    if (this.isRunning) {
-      this.controlsElement.classList.remove('hidden');
-      
-      if (this.activePlayer === 1) {
-        this.player1Element.classList.add('active');
-        this.player2Element.classList.add('inactive');
-      } else if (this.activePlayer === 2) {
-        this.player1Element.classList.add('inactive');
-        this.player2Element.classList.add('active');
-      }
-    } else {
-      if (this.activePlayer === null) {
-        // Timer hasn't started yet or has been reset
-        this.controlsElement.classList.add('hidden');
-      }
-    }
+    this.timeElement.textContent = this.formatTime(this.timeRemaining);
   }
   
   formatTime(seconds) {
@@ -113,14 +49,132 @@ class ChessTimer {
     const remainingSeconds = seconds % 60;
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   }
+}
+
+// Chess timer functionality
+class ChessTimer {
+  constructor(initialTimeInMinutes = 10) {
+    const initialTimeInSeconds = initialTimeInMinutes * 60;
+    
+    // Initialize players
+    this.player1 = new ChessPlayer(1, initialTimeInSeconds);
+    this.player2 = new ChessPlayer(2, initialTimeInSeconds);
+    this.players = [this.player1, this.player2];
+    
+    // Controls
+    this.controlsElement = document.getElementById('controls');
+    this.pauseButton = document.getElementById('pause');
+    this.resetButton = document.getElementById('reset');
+    
+    // Timer state
+    this.activePlayerId = null;
+    this.timer = null;
+    this.isRunning = false;
+    
+    this.init();
+  }
+  
+  init() {
+    // Initialize all players' displays
+    this.players.forEach(player => player.updateDisplay());
+    
+    // Set up control buttons
+    this.resetButton.addEventListener('click', () => this.reset());
+    this.pauseButton.addEventListener('click', () => this.pause());
+    
+    // Setup player 1 click handler
+    this.player1.element.addEventListener('click', () => {
+      if (!this.isRunning) {
+        this.activePlayerId = 2; // Set player 2 as active
+        this.start();
+      } else if (this.activePlayerId === 1) {
+        this.switchPlayer(); // Switch from player 1 to player 2
+      }
+    });
+    
+    // Setup player 2 click handler
+    this.player2.element.addEventListener('click', () => {
+      if (!this.isRunning) {
+        this.activePlayerId = 1; // Set player 1 as active
+        this.start();
+      } else if (this.activePlayerId === 2) {
+        this.switchPlayer(); // Switch from player 2 to player 1
+      }
+    });
+    
+    // Add haptic feedback when timer is clicked
+    const addVibration = (element) => {
+      element.addEventListener('click', () => {
+        if (this.isRunning) {
+          navigator.vibrate && navigator.vibrate(30);
+        }
+      });
+    };
+    
+    this.players.forEach(player => addVibration(player.element));
+    
+    // Enable keyboard controls
+    document.addEventListener('keydown', (e) => {
+      if (e.key === ' ' || e.code === 'Space') {
+        this.pause(); // Handles both pausing and resuming
+        e.preventDefault();
+      } else if (e.key === '1') {
+        if (!this.isRunning) {
+          this.activePlayerId = 2; // Pressing 1 starts player 2's timer
+          this.start();
+        } else if (this.activePlayerId === 1) {
+          this.switchPlayer(); // Switch from player 1 to player 2
+        }
+      } else if (e.key === '2') {
+        if (!this.isRunning) {
+          this.activePlayerId = 1; // Pressing 2 starts player 1's timer
+          this.start();
+        } else if (this.activePlayerId === 2) {
+          this.switchPlayer(); // Switch from player 2 to player 1
+        }
+      } else if (e.key === 'r' || e.key === 'R') {
+        this.reset();
+      }
+    });
+    
+    this.updateDisplay();
+  }
+  
+  getActivePlayer() {
+    if (!this.activePlayerId) return null;
+    return this.activePlayerId === 1 ? this.player1 : this.player2;
+  }
+  
+  getOpponentPlayer(player) {
+    return player === this.player1 ? this.player2 : this.player1;
+  }
+  
+  updateDisplay() {
+    // Update player states
+    this.players.forEach(player => {
+      if (this.activePlayerId) {
+        player.setActive(player.id === this.activePlayerId);
+      } else {
+        player.setActive(null); // No active state
+      }
+    });
+    
+    // Show/hide controls based on timer state
+    if (this.isRunning || (this.activePlayerId !== null && !this.isRunning)) {
+      this.controlsElement.classList.remove('hidden');
+    } else {
+      this.controlsElement.classList.add('hidden');
+    }
+  }
   
   start() {
     if (!this.isRunning) {
       this.isRunning = true;
-      this.activePlayer = this.activePlayer || 1; // Default to player 1 if not set
+      this.activePlayerId = this.activePlayerId || 1; // Default to player 1 if not set
       this.startTimer();
       this.controlsElement.classList.remove('hidden');
       this.pauseButton.textContent = 'Pause';
+      this.updateDisplay();
     }
   }
   
@@ -130,7 +184,7 @@ class ChessTimer {
       clearInterval(this.timer);
       this.timer = null;
       this.pauseButton.textContent = 'Resume';
-    } else if (this.activePlayer !== null) {
+    } else if (this.activePlayerId !== null) {
       // Resume the timer
       this.isRunning = true;
       this.startTimer();
@@ -140,16 +194,15 @@ class ChessTimer {
   
   reset() {
     this.pause();
-    this.player1Time = this.initialTime;
-    this.player2Time = this.initialTime;
-    this.activePlayer = null;
+    this.players.forEach(player => player.reset());
+    this.activePlayerId = null;
     this.controlsElement.classList.add('hidden');
     this.updateDisplay();
   }
   
   switchPlayer() {
     if (this.isRunning) {
-      this.activePlayer = this.activePlayer === 1 ? 2 : 1;
+      this.activePlayerId = this.activePlayerId === 1 ? 2 : 1;
       this.updateDisplay();
     }
   }
@@ -159,32 +212,24 @@ class ChessTimer {
     this.updateDisplay();
     
     this.timer = setInterval(() => {
-      if (this.activePlayer === 1) {
-        this.player1Time--;
-        if (this.player1Time <= 0) {
-          this.player1Time = 0;
-          this.handleTimeout();
-        }
-      } else if (this.activePlayer === 2) {
-        this.player2Time--;
-        if (this.player2Time <= 0) {
-          this.player2Time = 0;
+      const activePlayer = this.getActivePlayer();
+      if (activePlayer) {
+        const remainingTime = activePlayer.decrementTime();
+        if (remainingTime <= 0) {
           this.handleTimeout();
         }
       }
-      
-      this.updateDisplay();
     }, 1000);
   }
   
   handleTimeout() {
-    // We need to manually set isRunning to false here to prevent the pause button from changing to "Resume"
+    // Stop the timer
     this.isRunning = false;
     clearInterval(this.timer);
     this.timer = null;
     
     setTimeout(() => {
-      alert(`Player ${this.activePlayer} time is up!`);
+      alert(`Player ${this.activePlayerId} time is up!`);
     }, 100);
   }
 }
