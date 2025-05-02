@@ -83,8 +83,7 @@ class ChessTimer {
     // Setup player 1 click handler
     this.player1.element.addEventListener('click', () => {
       if (!this.isRunning()) {
-        this.setActivePlayer(this.player2);
-        this.start();
+        this.start(this.player2); // Start timer with player 2 active
       } else if (this.player1.isActive) {
         this.switchPlayer();
       }
@@ -93,8 +92,7 @@ class ChessTimer {
     // Setup player 2 click handler
     this.player2.element.addEventListener('click', () => {
       if (!this.isRunning()) {
-        this.setActivePlayer(this.player1);
-        this.start();
+        this.start(this.player1); // Start timer with player 1 active
       } else if (this.player2.isActive) {
         this.switchPlayer();
       }
@@ -143,13 +141,9 @@ class ChessTimer {
     }
   }
   
-  start() {
+  start(activePlayer) {
     if (!this.isRunning()) {
-      // If no player is active, default to player 1
-      if (!this.hasActivePlayer()) {
-        this.setActivePlayer(this.player1);
-      }
-      
+      this.setActivePlayer(activePlayer);
       this.startTimer();
       this.controlsElement.classList.remove('hidden');
       this.pauseButton.textContent = 'Pause';
