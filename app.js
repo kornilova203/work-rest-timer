@@ -68,7 +68,6 @@ class ChessTimer {
     
     // Timer state
     this.timer = null;
-    this.isRunning = false;
     
     this.init();
   }
@@ -83,7 +82,7 @@ class ChessTimer {
     
     // Setup player 1 click handler
     this.player1.element.addEventListener('click', () => {
-      if (!this.isRunning) {
+      if (!this.isRunning()) {
         this.setActivePlayer(this.player2);
         this.start();
       } else if (this.player1.isActive) {
@@ -93,7 +92,7 @@ class ChessTimer {
     
     // Setup player 2 click handler
     this.player2.element.addEventListener('click', () => {
-      if (!this.isRunning) {
+      if (!this.isRunning()) {
         this.setActivePlayer(this.player1);
         this.start();
       } else if (this.player2.isActive) {
@@ -104,7 +103,7 @@ class ChessTimer {
     // Add haptic feedback when timer is clicked
     const addVibration = (element) => {
       element.addEventListener('click', () => {
-        if (this.isRunning) {
+        if (this.isRunning()) {
           navigator.vibrate && navigator.vibrate(30);
         }
       });
@@ -118,14 +117,14 @@ class ChessTimer {
         this.pause(); // Handles both pausing and resuming
         e.preventDefault();
       } else if (e.key === '1') {
-        if (!this.isRunning) {
+        if (!this.isRunning()) {
           this.setActivePlayer(this.player2); // Pressing 1 starts player 2's timer
           this.start();
         } else if (this.player1.isActive) {
           this.switchPlayer(); // Switch from player 1 to player 2
         }
       } else if (e.key === '2') {
-        if (!this.isRunning) {
+        if (!this.isRunning()) {
           this.setActivePlayer(this.player1); // Pressing 2 starts player 1's timer
           this.start();
         } else if (this.player2.isActive) {
@@ -151,13 +150,17 @@ class ChessTimer {
     return this.players.some(player => player.isActive);
   }
   
+  isRunning() {
+    return this.timer !== null;
+  }
+  
   setActivePlayer(player) {
     this.players.forEach(p => p.setActive(p === player));
   }
   
   updateDisplay() {
     // Show/hide controls based on timer state
-    if (this.isRunning || (this.hasActivePlayer() && !this.isRunning)) {
+    if (this.isRunning() || this.hasActivePlayer()) {
       this.controlsElement.classList.remove('hidden');
     } else {
       this.controlsElement.classList.add('hidden');
@@ -165,9 +168,7 @@ class ChessTimer {
   }
   
   start() {
-    if (!this.isRunning) {
-      this.isRunning = true;
-      
+    if (!this.isRunning()) {
       // If no player is active, default to player 1
       if (!this.hasActivePlayer()) {
         this.setActivePlayer(this.player1);
@@ -181,14 +182,12 @@ class ChessTimer {
   }
   
   pause() {
-    if (this.isRunning) {
-      this.isRunning = false;
+    if (this.isRunning()) {
       clearInterval(this.timer);
       this.timer = null;
       this.pauseButton.textContent = 'Resume';
     } else if (this.hasActivePlayer()) {
       // Resume the timer
-      this.isRunning = true;
       this.startTimer();
       this.pauseButton.textContent = 'Pause';
     }
@@ -202,7 +201,7 @@ class ChessTimer {
   }
   
   switchPlayer() {
-    if (this.isRunning) {
+    if (this.isRunning()) {
       const activePlayer = this.getActivePlayer();
       if (activePlayer) {
         const opponent = this.getOpponentPlayer(activePlayer);
@@ -229,7 +228,6 @@ class ChessTimer {
   
   handleTimeout(player) {
     // Stop the timer
-    this.isRunning = false;
     clearInterval(this.timer);
     this.timer = null;
     
