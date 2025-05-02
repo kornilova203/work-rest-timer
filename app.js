@@ -343,8 +343,8 @@ document.addEventListener('DOMContentLoaded', () => {
     timer.updatePlayerTime(timer.players[0], player1NewTime * 60 * 1000);
     timer.updatePlayerTime(timer.players[1], player2NewTime * 60 * 1000);
 
-    if (this.isRunning()) {
-      this.reset();
+    if (timer.isRunning()) {
+      timer.reset();
     }
     
     // Close the modal
