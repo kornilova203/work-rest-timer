@@ -111,30 +111,6 @@ class ChessTimer {
     
     this.players.forEach(player => addVibration(player.element));
     
-    // Enable keyboard controls
-    document.addEventListener('keydown', (e) => {
-      if (e.key === ' ' || e.code === 'Space') {
-        this.pause(); // Handles both pausing and resuming
-        e.preventDefault();
-      } else if (e.key === '1') {
-        if (!this.isRunning()) {
-          this.setActivePlayer(this.player2); // Pressing 1 starts player 2's timer
-          this.start();
-        } else if (this.player1.isActive) {
-          this.switchPlayer(); // Switch from player 1 to player 2
-        }
-      } else if (e.key === '2') {
-        if (!this.isRunning()) {
-          this.setActivePlayer(this.player1); // Pressing 2 starts player 1's timer
-          this.start();
-        } else if (this.player2.isActive) {
-          this.switchPlayer(); // Switch from player 2 to player 1
-        }
-      } else if (e.key === 'r' || e.key === 'R') {
-        this.reset();
-      }
-    });
-    
     this.updateDisplay();
   }
   
