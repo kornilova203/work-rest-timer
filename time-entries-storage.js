@@ -1,0 +1,124 @@
+/**
+ * TimeEntriesStorage class handles storing and retrieving time entries from localStorage
+ * and providing functionality to export them to CSV format.
+ */
+class TimeEntriesStorage {
+  constructor() {
+    this.localEntries = [];
+    this.loadEntries();
+  }
+  
+  /**
+   * Load saved entries from localStorage
+   */
+  loadEntries() {
+    const savedEntries = localStorage.getItem('timeEntries');
+    if (savedEntries) {
+      try {
+        this.localEntries = JSON.parse(savedEntries);
+      } catch (e) {
+        console.error('Error loading saved time entries:', e);
+        this.localEntries = [];
+      }
+    }
+  }
+  
+  /**
+   * Save the current entries to localStorage
+   */
+  saveEntries() {
+    localStorage.setItem('timeEntries', JSON.stringify(this.localEntries));
+  }
+  
+  /**
+   * Add a new completed time entry
+   * @param {Object} entry - The time entry to add
+   */
+  addEntry(entry) {
+    this.localEntries.push(entry);
+    this.saveEntries();
+  }
+  
+  /**
+   * Clear all time entries
+   */
+  clearEntries() {
+    this.localEntries = [];
+    this.saveEntries();
+  }
+  
+  /**
+   * Get all stored time entries
+   * @returns {Array} - Array of time entry objects
+   */
+  getEntries() {
+    return this.localEntries;
+  }
+  
+  /**
+   * Export entries as CSV for manual import to time tracking tools
+   * @returns {string|null} - CSV content or null if no entries
+   */
+  exportCSV() {
+    if (this.localEntries.length === 0) {
+      return null;
+    }
+    
+    // Define CSV header
+    const header = ['Description', 'Start date', 'Start time', 'End date', 'End time', 'Duration', 'Project', 'Workspace'];
+    
+    // Map entries to CSV rows
+    const rows = this.localEntries.map(entry => {
+      const start = new Date(entry.start);
+      const stop = new Date(entry.stop);
+      
+      // Format dates and times
+      const startDate = start.toISOString().split('T')[0];
+      const startTime = start.toISOString().split('T')[1].substring(0, 8);
+      const endDate = stop.toISOString().split('T')[0];
+      const endTime = stop.toISOString().split('T')[1].substring(0, 8);
+      
+      // Format duration as HH:MM:SS
+      const durationSec = entry.duration;
+      const hours = Math.floor(durationSec / 3600);
+      const minutes = Math.floor((durationSec % 3600) / 60);
+      const seconds = durationSec % 60;
+      const duration = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      
+      return [
+        entry.description,
+        startDate,
+        startTime,
+        endDate,
+        endTime,
+        duration,
+        entry.project_id || '',
+        entry.workspace_id || ''
+      ];
+    });
+    
+    // Combine header and rows
+    const csvContent = [header, ...rows]
+      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .join('\n');
+      
+    return csvContent;
+  }
+}
+
+// Helper function to download CSV file
+function downloadCSV(csv, filename) {
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  
+  // Create download link
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+  
+  // Add to document, trigger download, and remove
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}

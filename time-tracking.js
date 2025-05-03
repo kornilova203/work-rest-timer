@@ -1,28 +1,20 @@
-// External Timer API integration with local storage queue
+// External Timer API integration with local storage
 const ExternalTimerAPI = {
   currentTimeEntry: null,
-  localEntries: [],
+  storage: null,
   
-  // Initialize and load saved entries
+  // Initialize the API
   init: function() {
-    // Load any saved entries from localStorage
-    const savedEntries = localStorage.getItem('togglLocalEntries');
-    if (savedEntries) {
-      try {
-        this.localEntries = JSON.parse(savedEntries);
-      } catch (e) {
-        console.error('Error loading saved Toggl entries:', e);
-        this.localEntries = [];
-      }
-    }
+    // Initialize storage
+    this.storage = new TimeEntriesStorage();
     
     // Check if we have a running entry from a previous session
-    const runningEntry = localStorage.getItem('togglRunningEntry');
+    const runningEntry = localStorage.getItem('currentTimeEntry');
     if (runningEntry) {
       try {
         this.currentTimeEntry = JSON.parse(runningEntry);
       } catch (e) {
-        console.error('Error loading running Toggl entry:', e);
+        console.error('Error loading running time entry:', e);
       }
     }
   },
@@ -45,9 +37,9 @@ const ExternalTimerAPI = {
     };
     
     // Save the running entry to localStorage
-    localStorage.setItem('togglRunningEntry', JSON.stringify(this.currentTimeEntry));
+    localStorage.setItem('currentTimeEntry', JSON.stringify(this.currentTimeEntry));
     
-    console.log('Started local Toggl time entry:', this.currentTimeEntry);
+    console.log('Started time entry:', this.currentTimeEntry);
     
     // Show notification to the user
     this._showNotification('Time tracking started');
@@ -64,14 +56,13 @@ const ExternalTimerAPI = {
        new Date(this.currentTimeEntry.start).getTime()) / 1000
     );
     
-    // Add to local entries queue
-    this.localEntries.push(this.currentTimeEntry);
+    // Add to storage
+    this.storage.addEntry(this.currentTimeEntry);
     
-    // Save updates to localStorage
-    localStorage.setItem('togglLocalEntries', JSON.stringify(this.localEntries));
-    localStorage.removeItem('togglRunningEntry');
+    // Remove the current entry
+    localStorage.removeItem('currentTimeEntry');
     
-    console.log('Stopped local Toggl time entry:', this.currentTimeEntry);
+    console.log('Stopped time entry:', this.currentTimeEntry);
     this._showNotification(`Time entry saved: ${this.currentTimeEntry.duration}s`);
     
     this.currentTimeEntry = null;
@@ -96,68 +87,13 @@ const ExternalTimerAPI = {
     }, 2500);
   },
   
-  // Export entries as CSV for manual import to Toggl
+  // Export entries as CSV for manual import to time tracking tools
   exportCSV: function() {
-    if (this.localEntries.length === 0) {
+    const csv = this.storage.exportCSV();
+    if (!csv) {
       this._showNotification('No time entries to export');
-      return null;
     }
-    
-    // Define CSV header
-    const header = ['Description', 'Start date', 'Start time', 'End date', 'End time', 'Duration', 'Project', 'Workspace'];
-    
-    // Map entries to CSV rows
-    const rows = this.localEntries.map(entry => {
-      const start = new Date(entry.start);
-      const stop = new Date(entry.stop);
-      
-      // Format dates and times
-      const startDate = start.toISOString().split('T')[0];
-      const startTime = start.toISOString().split('T')[1].substring(0, 8);
-      const endDate = stop.toISOString().split('T')[0];
-      const endTime = stop.toISOString().split('T')[1].substring(0, 8);
-      
-      // Format duration as HH:MM:SS
-      const durationSec = entry.duration;
-      const hours = Math.floor(durationSec / 3600);
-      const minutes = Math.floor((durationSec % 3600) / 60);
-      const seconds = durationSec % 60;
-      const duration = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-      
-      return [
-        entry.description,
-        startDate,
-        startTime,
-        endDate,
-        endTime,
-        duration,
-        entry.project_id || '',
-        entry.workspace_id || ''
-      ];
-    });
-    
-    // Combine header and rows
-    const csvContent = [header, ...rows]
-      .map(row => row.map(cell => `"${cell}"`).join(','))
-      .join('\n');
-      
-    return csvContent;
+    return csv;
   }
 };
 
-// Function to download CSV file
-function downloadCSV(csv, filename) {
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  
-  // Create download link
-  const url = URL.createObjectURL(blob);
-  link.setAttribute('href', url);
-  link.setAttribute('download', filename);
-  link.style.visibility = 'hidden';
-  
-  // Add to document, trigger download, and remove
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
