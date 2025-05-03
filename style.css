@@ -159,20 +159,11 @@ button:hover {
 
 .player-time-setting,
 .setting-input {
-  margin-bottom: 20px;
+  margin-bottom: 15px;
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-
-.player-time-setting label,
-.setting-input label {
-  display: block;
-  margin-bottom: 10px;
-  font-size: 14px;
-  opacity: 0.8;
-  text-align: center;
 }
 
 .player-time-setting input,
@@ -190,6 +181,33 @@ button:hover {
 input[type="time"] {
   width: 140px;
   text-align: center;
+}
+
+/* Styling for placeholders */
+::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+  opacity: 1;
+}
+
+/* Add proper labels for time inputs */
+.player-time-setting {
+  position: relative;
+}
+
+.player-time-setting:first-child::before {
+  content: "Work";
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.player-time-setting:last-child::before {
+  content: "Rest";
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  opacity: 0.8;
 }
 
 .time-tracking-settings {
