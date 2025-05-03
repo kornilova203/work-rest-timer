@@ -421,10 +421,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Open settings modal
   settingsButton.addEventListener('click', () => {
-    // Pause the timer if it's running
-    if (timer.isRunning()) {
-      timer.pause();
-    }
+    // Open settings without stopping the timer
     settingsModal.classList.remove('hidden');
   });
   
@@ -524,11 +521,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Open entries modal
   entriesButton.addEventListener('click', () => {
-    // Pause the timer if it's running
-    if (timer.isRunning()) {
-      timer.pause();
-    }
-    
+    // Open entries without stopping the timer
     renderTimeEntries();
     entriesModal.classList.remove('hidden');
   });
