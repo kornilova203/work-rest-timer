@@ -357,14 +357,6 @@ class ChessTimer {
     // Let the player handle its specific timeout behavior
     player.handleTimeout();
   }
-
-  // Method to update player time (used by settings)
-  updatePlayerTime(player, timeInSeconds) {
-    const timeInMs = timeInSeconds * 1000;
-    player.initialTime = timeInMs;
-    player.timeRemaining = timeInMs;
-    player.updateDisplay();
-  }
 }
 
 // Initialize the timer when the DOM is fully loaded
@@ -470,13 +462,11 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('togglProject', togglProjectInput.value);
     localStorage.setItem('togglDescription', togglDescriptionInput.value);
     
-    // Update timer with new values in seconds
-    timer.updatePlayerTime(timer.players[0], player1NewTimeSeconds);
-    timer.updatePlayerTime(timer.players[1], player2NewTimeSeconds);
-
-    if (timer.isRunning()) {
-      timer.reset();
-    }
+    // Update the initial times for the players without resetting current timers
+    timer.player1.initialTime = player1NewTimeSeconds * 1000;
+    timer.player2.initialTime = player2NewTimeSeconds * 1000;
+    
+    // No need to reset the timer or update the display if it's already running
     
     // Close the modal
     settingsModal.classList.add('hidden');

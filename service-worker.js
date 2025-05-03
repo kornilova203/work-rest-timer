@@ -1,9 +1,11 @@
-const CACHE_NAME = 'chess-timer-v1';
+const CACHE_NAME = 'work-rest-timer-v1';
 const urlsToCache = [
   '/',
   '/index.html',
   '/style.css',
   '/app.js',
+  '/time-tracking.js',
+  '/time-entries-storage.js',
   '/manifest.json'
 ];
 

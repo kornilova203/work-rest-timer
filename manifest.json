@@ -1,11 +1,11 @@
 {
-  "name": "Chess Timer",
-  "short_name": "Chess Timer",
+  "name": "Work-Rest Timer",
+  "short_name": "Work-Rest Timer",
   "start_url": "index.html",
   "display": "standalone",
   "background_color": "#f5f5f5",
   "theme_color": "#000000",
   "orientation": "portrait-primary",
-  "description": "A minimalistic chess timer progressive web app.",
+  "description": "A minimalistic work and rest timer progressive web app with time tracking.",
   "scope": "/"
 }
