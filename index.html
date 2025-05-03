@@ -19,7 +19,10 @@
           <button id="reset">Reset</button>
           <button id="pause">Pause</button>
         </div>
-        <button id="settings" class="settings-button">Settings</button>
+        <div class="app-buttons">
+          <button id="entries" class="entries-button">Entries</button>
+          <button id="settings" class="settings-button">Settings</button>
+        </div>
       </div>
       
       <div id="settings-modal" class="modal hidden">
@@ -60,6 +63,26 @@
           </div>
         </div>
       </div>
+      <!-- Entries Modal -->
+      <div id="entries-modal" class="modal hidden">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>Time Entries</h2>
+            <button id="close-entries" class="close-button">&times;</button>
+          </div>
+          <div class="entries-container">
+            <div id="entries-list" class="entries-list">
+              <!-- Entries will be populated here via JavaScript -->
+              <div class="no-entries">No time entries yet</div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button id="export-entries" class="export-button">Export (CSV)</button>
+            <button id="clear-entries" class="clear-button">Clear All</button>
+          </div>
+        </div>
+      </div>
+      
       <div id="player2" class="timer">
         <div class="time">10:00</div>
       </div>

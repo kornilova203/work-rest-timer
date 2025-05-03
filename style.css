@@ -67,11 +67,18 @@ body {
   transition: opacity 0.3s;
 }
 
-.settings-button {
+.app-buttons {
   position: absolute;
   right: 20px;
   top: 50%;
   transform: translateY(-50%);
+  display: flex;
+  gap: 8px;
+}
+
+.settings-button, .entries-button {
+  font-size: 14px;
+  padding: 8px 15px;
 }
 
 .hidden {
@@ -230,7 +237,74 @@ input[type="time"] {
   border-top: 1px dotted #444;
 }
 
-.export-button {
+/* Entries Modal Styles */
+.entries-container {
+  padding: 15px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.entries-list {
+  width: 100%;
+}
+
+.entry-item {
+  padding: 12px;
+  margin-bottom: 10px;
+  background-color: #333;
+  border-radius: 4px;
+}
+
+.entry-description {
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.entry-time, .entry-duration {
+  font-size: 12px;
+  opacity: 0.8;
+  margin-bottom: 4px;
+}
+
+.no-entries {
+  padding: 30px 20px;
+  text-align: center;
+  opacity: 0.6;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 10px;
+  padding: 15px;
+}
+
+.modal-footer button {
+  flex: 1;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  font-size: 14px;
+  text-transform: uppercase;
+}
+
+.modal-footer .export-button {
+  background-color: #333;
+  border-radius: 6px;
+  padding: 10px;
+  opacity: 1;
+}
+
+.modal-footer .clear-button {
+  background-color: #444;
+  opacity: 0.7;
+  border-radius: 6px;
+  padding: 10px;
+}
+
+/* Style for the export button in time-tracking settings */
+.time-tracking-export .export-button {
   width: 100%;
   padding: 12px;
   background-color: #333;
@@ -284,11 +358,17 @@ input[type="time"] {
     padding: 5px 0;
   }
   
-  .settings-button {
+  .app-buttons {
     position: static;
     transform: none;
     margin-top: 5px;
     order: 2;
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .entries-button, .settings-button {
+    flex: 1;
   }
 }
 

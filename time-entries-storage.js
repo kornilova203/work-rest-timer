@@ -56,6 +56,38 @@ class TimeEntriesStorage {
   }
   
   /**
+   * Format a duration in seconds to a readable string
+   * @param {number} seconds - Duration in seconds
+   * @returns {string} - Formatted duration
+   */
+  formatDuration(seconds) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    let result = '';
+    if (hours > 0) {
+      result += `${hours}h `;
+    }
+    if (minutes > 0 || hours > 0) {
+      result += `${minutes}m `;
+    }
+    result += `${secs}s`;
+    
+    return result;
+  }
+  
+  /**
+   * Format a date string to a readable format
+   * @param {string} dateString - ISO date string
+   * @returns {string} - Formatted date
+   */
+  formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleString();
+  }
+  
+  /**
    * Export entries as CSV for manual import to time tracking tools
    * @returns {string|null} - CSV content or null if no entries
    */

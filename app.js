@@ -395,6 +395,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const togglDescriptionInput = document.getElementById('toggl-description');
   const togglExportButton = document.getElementById('toggl-export-btn');
   
+  // Entries modal elements
+  const entriesButton = document.getElementById('entries');
+  const entriesModal = document.getElementById('entries-modal');
+  const closeEntriesButton = document.getElementById('close-entries');
+  const entriesList = document.getElementById('entries-list');
+  const exportEntriesButton = document.getElementById('export-entries');
+  const clearEntriesButton = document.getElementById('clear-entries');
+  
   // Set initial values from localStorage - convert seconds to HH:MM:SS format
   const setTimeInputValue = (input, seconds) => {
     const hours = Math.floor(seconds / 3600);
@@ -475,5 +483,75 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Close the modal
     settingsModal.classList.add('hidden');
+  });
+  
+  // Function to render time entries list
+  function renderTimeEntries() {
+    const entries = ExternalTimerAPI.storage.getEntries();
+    entriesList.innerHTML = '';
+    
+    if (entries.length === 0) {
+      entriesList.innerHTML = '<div class="no-entries">No time entries yet</div>';
+      return;
+    }
+    
+    // Sort entries by start time, newest first
+    entries.sort((a, b) => new Date(b.start) - new Date(a.start));
+    
+    entries.forEach(entry => {
+      const entryItem = document.createElement('div');
+      entryItem.className = 'entry-item';
+      
+      const description = document.createElement('div');
+      description.className = 'entry-description';
+      description.textContent = entry.description || 'Work session';
+      
+      const timeRange = document.createElement('div');
+      timeRange.className = 'entry-time';
+      timeRange.textContent = `${ExternalTimerAPI.storage.formatDate(entry.start)} - ${ExternalTimerAPI.storage.formatDate(entry.stop)}`;
+      
+      const duration = document.createElement('div');
+      duration.className = 'entry-duration';
+      duration.textContent = `Duration: ${ExternalTimerAPI.storage.formatDuration(entry.duration)}`;
+      
+      entryItem.appendChild(description);
+      entryItem.appendChild(timeRange);
+      entryItem.appendChild(duration);
+      
+      entriesList.appendChild(entryItem);
+    });
+  }
+  
+  // Open entries modal
+  entriesButton.addEventListener('click', () => {
+    // Pause the timer if it's running
+    if (timer.isRunning()) {
+      timer.pause();
+    }
+    
+    renderTimeEntries();
+    entriesModal.classList.remove('hidden');
+  });
+  
+  // Close entries modal
+  closeEntriesButton.addEventListener('click', () => {
+    entriesModal.classList.add('hidden');
+  });
+  
+  // Export entries as CSV
+  exportEntriesButton.addEventListener('click', () => {
+    const csvContent = ExternalTimerAPI.exportCSV();
+    if (csvContent) {
+      const date = new Date().toISOString().split('T')[0];
+      downloadCSV(csvContent, `time-entries-${date}.csv`);
+    }
+  });
+  
+  // Clear all entries
+  clearEntriesButton.addEventListener('click', () => {
+    if (confirm('Are you sure you want to delete all time entries? This cannot be undone.')) {
+      ExternalTimerAPI.storage.clearEntries();
+      renderTimeEntries();
+    }
   });
 });
