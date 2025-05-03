@@ -148,9 +148,19 @@ button:hover {
   padding: 20px;
 }
 
+.timer-settings-row {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
 .player-time-setting,
 .setting-input {
   margin-bottom: 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .player-time-setting label,
@@ -159,6 +169,7 @@ button:hover {
   margin-bottom: 10px;
   font-size: 14px;
   opacity: 0.8;
+  text-align: center;
 }
 
 .player-time-setting input,
@@ -169,6 +180,12 @@ button:hover {
   border: none;
   color: white;
   font-size: 16px;
+}
+
+/* Make time inputs narrower */
+input[type="time"] {
+  width: 140px;
+  text-align: center;
 }
 
 .time-tracking-settings {
