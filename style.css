@@ -91,6 +91,7 @@ button {
   letter-spacing: 1px;
   opacity: 0.8;
   transition: opacity 0.2s;
+  border-radius: 4px;
 }
 
 button:hover {
@@ -115,6 +116,8 @@ button:hover {
   background-color: #222;
   width: 90%;
   max-width: 400px;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .modal-header, .modal-footer {
@@ -180,6 +183,7 @@ button:hover {
   border: none;
   color: white;
   font-size: 16px;
+  border-radius: 4px;
 }
 
 /* Make time inputs narrower */
@@ -215,6 +219,7 @@ input[type="time"] {
   opacity: 1;
   margin-bottom: 10px;
   font-size: 14px;
+  border-radius: 6px;
 }
 
 .export-info {
@@ -233,6 +238,7 @@ input[type="time"] {
   padding: 10px 40px;
   background-color: #444;
   opacity: 1;
+  border-radius: 6px;
 }
 
 /* Time tracking notifications */
