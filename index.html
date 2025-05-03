@@ -37,6 +37,26 @@
               <label for="player2-time">Rest Time</label>
               <input type="time" id="player2-time" step="60" value="00:10:00">
             </div>
+            
+            <div class="toggl-settings">
+              <h3>Toggl Integration</h3>
+              <div class="setting-input">
+                <label for="toggl-workspace">Workspace ID (optional)</label>
+                <input type="text" id="toggl-workspace" placeholder="Workspace ID">
+              </div>
+              <div class="setting-input">
+                <label for="toggl-project">Project ID (optional)</label>
+                <input type="text" id="toggl-project" placeholder="Project ID">
+              </div>
+              <div class="setting-input">
+                <label for="toggl-description">Default Description</label>
+                <input type="text" id="toggl-description" placeholder="Work session">
+              </div>
+              <div class="toggl-export">
+                <button id="toggl-export-btn" class="export-button">Export Time Entries (CSV)</button>
+                <p class="export-info">Time entries are stored locally and can be exported for manual import to Toggl.</p>
+              </div>
+            </div>
           </div>
           <div class="modal-footer">
             <button id="save-settings">Save</button>

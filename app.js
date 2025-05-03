@@ -78,6 +78,52 @@ class ChessPlayer {
       return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
   }
+  
+  // Called when this timer becomes active
+  handleStart() {
+    // Implemented by subclasses
+  }
+  
+  // Called when this timer becomes inactive
+  handleStop() {
+    // Implemented by subclasses
+  }
+  
+  // Called on timeout
+  handleTimeout() {
+    // Implemented by subclasses
+  }
+}
+
+// Work timer that tracks time in Toggl
+class Work extends ChessPlayer {
+  constructor(id, initialTimeInMs) {
+    super(id, initialTimeInMs);
+  }
+  
+  handleStart() {
+    // Start Toggl time entry when work timer becomes active
+    TogglAPI.startTimeEntry();
+  }
+  
+  handleStop() {
+    // Stop Toggl time entry when work timer becomes inactive
+    TogglAPI.stopTimeEntry();
+  }
+  
+  handleTimeout() {
+    // Stop Toggl time entry when work timer times out
+    TogglAPI.stopTimeEntry();
+  }
+}
+
+// Rest timer
+class Rest extends ChessPlayer {
+  constructor(id, initialTimeInMs) {
+    super(id, initialTimeInMs);
+  }
+  
+  // Rest timer doesn't need special handling for Toggl
 }
 
 // Chess timer functionality
@@ -86,9 +132,9 @@ class ChessTimer {
     const player1TimeInMs = player1Seconds * 1000;
     const player2TimeInMs = player2Seconds * 1000;
     
-    // Initialize players
-    this.player1 = new ChessPlayer(1, player1TimeInMs);
-    this.player2 = new ChessPlayer(2, player2TimeInMs);
+    // Initialize players - now using specialized Work and Rest classes
+    this.player1 = new Work(1, player1TimeInMs);
+    this.player2 = new Rest(2, player2TimeInMs);
     this.players = [this.player1, this.player2];
     
     // Controls
@@ -177,16 +223,24 @@ class ChessTimer {
   // Combined method that handles both starting the timer with a specific player
   // and switching players during gameplay
   start(player) {
+    const prevActivePlayer = this.getActivePlayer();
+    if (prevActivePlayer != null && prevActivePlayer !== player && this.isRunning()) {
+      prevActivePlayer.handleStop()
+    }
     this.setActivePlayer(player);
     if (!this.isRunning()) {
       this.startTimer();
       this.controlsElement.classList.remove('hidden');
       this.pauseButton.textContent = 'Pause';
     }
+    if (prevActivePlayer !== player) {
+      player.handleStart();
+    }
     this.updateDisplay();
   }
   
   pause() {
+    const activePlayer = this.getActivePlayer();
     if (this.isRunning()) {
       // Cancel animation frame and clear timeout
       cancelAnimationFrame(this.timer);
@@ -196,14 +250,26 @@ class ChessTimer {
       }
       this.timer = null;
       this.pauseButton.textContent = 'Resume';
-    } else if (this.hasActivePlayer()) {
+      
+      // Notify the active player that it's being paused
+      activePlayer.handleStop();
+    } else if (activePlayer != null) {
       // Resume the timer
       this.startTimer();
       this.pauseButton.textContent = 'Pause';
+      
+      // Notify the active player that it's being resumed
+      activePlayer.handleStart();
     }
   }
   
   reset() {
+    // Notify the active player about the reset
+    const activePlayer = this.getActivePlayer();
+    if (activePlayer) {
+      activePlayer.handleStop();
+    }
+    
     // Stop the timer directly instead of using pause()
     if (this.timer) {
       cancelAnimationFrame(this.timer);
@@ -287,6 +353,9 @@ class ChessTimer {
       clearTimeout(this.timeoutId);
       this.timeoutId = null;
     }
+    
+    // Let the player handle its specific timeout behavior
+    player.handleTimeout();
   }
 
   // Method to update player time (used by settings)
@@ -299,7 +368,174 @@ class ChessTimer {
 }
 
 // Initialize the timer when the DOM is fully loaded
+// Toggl API integration with local storage queue
+const TogglAPI = {
+  currentTimeEntry: null,
+  localEntries: [],
+  
+  // Initialize and load saved entries
+  init: function() {
+    // Load any saved entries from localStorage
+    const savedEntries = localStorage.getItem('togglLocalEntries');
+    if (savedEntries) {
+      try {
+        this.localEntries = JSON.parse(savedEntries);
+      } catch (e) {
+        console.error('Error loading saved Toggl entries:', e);
+        this.localEntries = [];
+      }
+    }
+    
+    // Check if we have a running entry from a previous session
+    const runningEntry = localStorage.getItem('togglRunningEntry');
+    if (runningEntry) {
+      try {
+        this.currentTimeEntry = JSON.parse(runningEntry);
+      } catch (e) {
+        console.error('Error loading running Toggl entry:', e);
+      }
+    }
+  },
+  
+  // Start a time entry locally
+  startTimeEntry: function() {
+    const workspaceId = localStorage.getItem('togglWorkspace');
+    const projectId = localStorage.getItem('togglProject');
+    const description = localStorage.getItem('togglDescription') || 'Work session';
+    
+    // Create a local time entry
+    this.currentTimeEntry = {
+      id: Date.now().toString(), // Use timestamp as ID
+      description: description,
+      workspace_id: workspaceId ? parseInt(workspaceId) : undefined,
+      project_id: projectId ? parseInt(projectId) : undefined,
+      start: new Date().toISOString(),
+      duration: -1, // Running timer has negative duration
+      synced: false
+    };
+    
+    // Save the running entry to localStorage
+    localStorage.setItem('togglRunningEntry', JSON.stringify(this.currentTimeEntry));
+    
+    console.log('Started local Toggl time entry:', this.currentTimeEntry);
+    
+    // Show notification to the user
+    this._showNotification('Time tracking started');
+  },
+  
+  // Stop the current time entry
+  stopTimeEntry: function() {
+    if (!this.currentTimeEntry) return;
+    
+    // Update the entry with stop time and duration
+    this.currentTimeEntry.stop = new Date().toISOString();
+    this.currentTimeEntry.duration = Math.floor(
+      (new Date(this.currentTimeEntry.stop).getTime() - 
+       new Date(this.currentTimeEntry.start).getTime()) / 1000
+    );
+    
+    // Add to local entries queue
+    this.localEntries.push(this.currentTimeEntry);
+    
+    // Save updates to localStorage
+    localStorage.setItem('togglLocalEntries', JSON.stringify(this.localEntries));
+    localStorage.removeItem('togglRunningEntry');
+    
+    console.log('Stopped local Toggl time entry:', this.currentTimeEntry);
+    this._showNotification(`Time entry saved: ${this.currentTimeEntry.duration}s`);
+    
+    this.currentTimeEntry = null;
+  },
+  
+  // Show a notification to the user
+  _showNotification: function(message) {
+    // Create a notification element
+    const notification = document.createElement('div');
+    notification.className = 'toggl-notification';
+    notification.textContent = message;
+    
+    // Append to the body
+    document.body.appendChild(notification);
+    
+    // Remove after a delay
+    setTimeout(() => {
+      notification.style.opacity = '0';
+      setTimeout(() => {
+        document.body.removeChild(notification);
+      }, 500);
+    }, 2500);
+  },
+  
+  // Export entries as CSV for manual import to Toggl
+  exportCSV: function() {
+    if (this.localEntries.length === 0) {
+      this._showNotification('No time entries to export');
+      return null;
+    }
+    
+    // Define CSV header
+    const header = ['Description', 'Start date', 'Start time', 'End date', 'End time', 'Duration', 'Project', 'Workspace'];
+    
+    // Map entries to CSV rows
+    const rows = this.localEntries.map(entry => {
+      const start = new Date(entry.start);
+      const stop = new Date(entry.stop);
+      
+      // Format dates and times
+      const startDate = start.toISOString().split('T')[0];
+      const startTime = start.toISOString().split('T')[1].substring(0, 8);
+      const endDate = stop.toISOString().split('T')[0];
+      const endTime = stop.toISOString().split('T')[1].substring(0, 8);
+      
+      // Format duration as HH:MM:SS
+      const durationSec = entry.duration;
+      const hours = Math.floor(durationSec / 3600);
+      const minutes = Math.floor((durationSec % 3600) / 60);
+      const seconds = durationSec % 60;
+      const duration = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      
+      return [
+        entry.description,
+        startDate,
+        startTime,
+        endDate,
+        endTime,
+        duration,
+        entry.project_id || '',
+        entry.workspace_id || ''
+      ];
+    });
+    
+    // Combine header and rows
+    const csvContent = [header, ...rows]
+      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .join('\n');
+      
+    return csvContent;
+  }
+};
+
+// Function to download CSV file
+function downloadCSV(csv, filename) {
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  
+  // Create download link
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+  
+  // Add to document, trigger download, and remove
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  // Initialize Toggl API
+  TogglAPI.init();
+  
   const initialTimeInSeconds = 10 * 60; // 10 minutes in seconds
   
   // Load player-specific times in seconds if available, default to 10 minutes (600 seconds)
@@ -317,6 +553,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const player1TimeInput = document.getElementById('player1-time');
   const player2TimeInput = document.getElementById('player2-time');
   
+  // Toggl integration elements
+  const togglWorkspaceInput = document.getElementById('toggl-workspace');
+  const togglProjectInput = document.getElementById('toggl-project');
+  const togglDescriptionInput = document.getElementById('toggl-description');
+  const togglExportButton = document.getElementById('toggl-export-btn');
+  
   // Set initial values from localStorage - convert seconds to HH:MM:SS format
   const setTimeInputValue = (input, seconds) => {
     const hours = Math.floor(seconds / 3600);
@@ -327,6 +569,11 @@ document.addEventListener('DOMContentLoaded', () => {
   
   setTimeInputValue(player1TimeInput, player1TimeSeconds);
   setTimeInputValue(player2TimeInput, player2TimeSeconds);
+  
+  // Load Toggl settings from localStorage
+  togglWorkspaceInput.value = localStorage.getItem('togglWorkspace') || '';
+  togglProjectInput.value = localStorage.getItem('togglProject') || '';
+  togglDescriptionInput.value = localStorage.getItem('togglDescription') || 'Work session';
   
   // Open settings modal
   settingsButton.addEventListener('click', () => {
@@ -340,6 +587,15 @@ document.addEventListener('DOMContentLoaded', () => {
   // Close settings modal
   closeSettingsButton.addEventListener('click', () => {
     settingsModal.classList.add('hidden');
+  });
+  
+  // Handle export button click
+  togglExportButton.addEventListener('click', () => {
+    const csvContent = TogglAPI.exportCSV();
+    if (csvContent) {
+      const date = new Date().toISOString().split('T')[0];
+      downloadCSV(csvContent, `toggl-time-entries-${date}.csv`);
+    }
   });
   
   // Save settings
@@ -367,6 +623,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Save to localStorage in seconds
     localStorage.setItem('player1Time', player1NewTimeSeconds);
     localStorage.setItem('player2Time', player2NewTimeSeconds);
+    
+    // Save Toggl settings to localStorage
+    localStorage.setItem('togglWorkspace', togglWorkspaceInput.value);
+    localStorage.setItem('togglProject', togglProjectInput.value);
+    localStorage.setItem('togglDescription', togglDescriptionInput.value);
     
     // Update timer with new values in seconds
     timer.updatePlayerTime(timer.players[0], player1NewTimeSeconds);
