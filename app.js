@@ -102,18 +102,18 @@ class Work extends ChessPlayer {
   }
   
   handleStart() {
-    // Start Toggl time entry when work timer becomes active
-    TogglAPI.startTimeEntry();
+    // Start external time entry when work timer becomes active
+    ExternalTimerAPI.startTimeEntry();
   }
   
   handleStop() {
-    // Stop Toggl time entry when work timer becomes inactive
-    TogglAPI.stopTimeEntry();
+    // Stop external time entry when work timer becomes inactive
+    ExternalTimerAPI.stopTimeEntry();
   }
   
   handleTimeout() {
-    // Stop Toggl time entry when work timer times out
-    TogglAPI.stopTimeEntry();
+    // Stop external time entry when work timer times out
+    ExternalTimerAPI.stopTimeEntry();
   }
 }
 
@@ -369,8 +369,8 @@ class ChessTimer {
 
 // Initialize the timer when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', () => {
-  // Initialize Toggl API
-  TogglAPI.init();
+  // Initialize External Timer API
+  ExternalTimerAPI.init();
   
   const initialTimeInSeconds = 10 * 60; // 10 minutes in seconds
   
@@ -427,10 +427,10 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Handle export button click
   togglExportButton.addEventListener('click', () => {
-    const csvContent = TogglAPI.exportCSV();
+    const csvContent = ExternalTimerAPI.exportCSV();
     if (csvContent) {
       const date = new Date().toISOString().split('T')[0];
-      downloadCSV(csvContent, `toggl-time-entries-${date}.csv`);
+      downloadCSV(csvContent, `time-entries-${date}.csv`);
     }
   });
   

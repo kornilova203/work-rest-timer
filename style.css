@@ -171,13 +171,13 @@ button:hover {
   font-size: 16px;
 }
 
-.toggl-settings {
+.time-tracking-settings {
   margin-top: 30px;
   padding-top: 20px;
   border-top: 1px solid #333;
 }
 
-.toggl-settings h3 {
+.time-tracking-settings h3 {
   font-size: 16px;
   font-weight: normal;
   text-transform: uppercase;
@@ -185,7 +185,7 @@ button:hover {
   margin-bottom: 20px;
 }
 
-.toggl-export {
+.time-tracking-export {
   margin-top: 25px;
   padding-top: 15px;
   border-top: 1px dotted #444;
@@ -218,8 +218,8 @@ button:hover {
   opacity: 1;
 }
 
-/* Toggl notifications */
-.toggl-notification {
+/* Time tracking notifications */
+.time-tracking-notification {
   position: fixed;
   bottom: 20px;
   left: 50%;

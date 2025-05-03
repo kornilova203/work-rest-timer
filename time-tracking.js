@@ -1,5 +1,5 @@
-// Toggl API integration with local storage queue
-const TogglAPI = {
+// External Timer API integration with local storage queue
+const ExternalTimerAPI = {
   currentTimeEntry: null,
   localEntries: [],
   
@@ -81,7 +81,7 @@ const TogglAPI = {
   _showNotification: function(message) {
     // Create a notification element
     const notification = document.createElement('div');
-    notification.className = 'toggl-notification';
+    notification.className = 'time-tracking-notification';
     notification.textContent = message;
     
     // Append to the body
