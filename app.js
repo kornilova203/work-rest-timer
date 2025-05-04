@@ -6,7 +6,7 @@ class TimerModel {
     this.id = id;
     this.initialTime = initialTime;
     this.remainingTime = initialTime;
-    this.isActive = false;
+    this.isCurrent = false;
   }
   
   updateTime(elapsedMs) {
@@ -21,8 +21,8 @@ class TimerModel {
     this.remainingTime = this.initialTime;
   }
   
-  setActive(isActive) {
-    this.isActive = isActive;
+  setCurrent(isCurrent) {
+    this.isCurrent = isCurrent;
   }
   
   getRemainingTime() {
@@ -41,9 +41,12 @@ class TimerView {
     this.timeElement.textContent = formattedTime;
   }
   
-  setActiveState(isActive) {
-    this.element.classList.remove('active', 'inactive');
-    this.element.classList.add(isActive ? 'active' : 'inactive');
+  setCurrentState(isCurrent) {
+    if (isCurrent) {
+      this.element.classList.add('current');
+    } else {
+      this.element.classList.remove('current');
+    }
   }
   
   // Add click event handler
@@ -85,29 +88,29 @@ class TimerController {
   
   updateView() {
     this.view.updateDisplay(this.formatTime(this.model.getRemainingTime()));
-    this.view.setActiveState(this.model.isActive);
+    this.view.setCurrentState(this.model.isCurrent);
   }
   
-  setActive(isActive, wasRunning, isRunning) {
-    const wasActive = this.model.isActive;
-    if (wasActive && wasRunning) {
+  setCurrent(isCurrent, wasRunning, isRunning) {
+    const wasCurrent = this.model.isCurrent;
+    if (wasCurrent && wasRunning) {
       this.handleStop();
     }
-    this.model.setActive(isActive);
+    this.model.setCurrent(isCurrent);
     this.updateView();
 
-    if (isActive && isRunning) {
+    if (isCurrent && isRunning) {
       this.handleStart();
     }
   }
   
   reset(wasRunning) {
     this.model.resetRemainingTime();
-    this.setActive(false, wasRunning, false)
+    this.setCurrent(false, wasRunning, false)
   }
   
-  isActive() {
-    return this.model.isActive;
+  isCurrent() {
+    return this.model.isCurrent;
   }
   
   /**
@@ -259,25 +262,25 @@ class WorkRestTimer {
   /**
    * @returns {TimerController|null}
    */
-  getActiveController() {
-    return this.controllers.find(controller => controller.isActive()) || null;
+  getCurrentController() {
+    return this.controllers.find(controller => controller.isCurrent()) || null;
   }
   
-  hasActiveController() {
-    return this.controllers.some(controller => controller.isActive());
+  hasCurrentController() {
+    return this.controllers.some(controller => controller.isCurrent());
   }
   
   isRunning() {
     return this.timer !== null;
   }
   
-  setActiveController(controller, wasRunning, isRunning) {
-    this.controllers.forEach(c => c.setActive(c === controller, wasRunning, isRunning));
+  setCurrentController(controller, wasRunning, isRunning) {
+    this.controllers.forEach(c => c.setCurrent(c === controller, wasRunning, isRunning));
   }
   
   updateDisplay() {
     // Show/hide pause and reset controls based on timer state
-    if (this.isRunning() || this.hasActiveController()) {
+    if (this.isRunning() || this.hasCurrentController()) {
       this.controlsElement.classList.remove('hidden');
     } else {
       this.controlsElement.classList.add('hidden');
@@ -285,16 +288,16 @@ class WorkRestTimer {
   }
   
   // Activates the specified controller's timer
-  // If another timer was active, it stops that timer first
+  // If another timer was current, it stops that timer first
   start(controller) {
-    const prevActiveController = this.getActiveController();
+    const prevCurrentController = this.getCurrentController();
     const wasRunning = this.isRunning();
-    if (wasRunning && prevActiveController != null && prevActiveController !== controller) {
-      prevActiveController.handleStop()
+    if (wasRunning && prevCurrentController != null && prevCurrentController !== controller) {
+      prevCurrentController.handleStop()
     }
     
-    // Activate the new controller
-    this.setActiveController(controller, wasRunning, true);
+    // Set the new controller as current
+    this.setCurrentController(controller, wasRunning, true);
     
     // Start the timer if not already running
     if (!wasRunning) {
@@ -303,7 +306,7 @@ class WorkRestTimer {
       this.pauseButton.textContent = 'Pause';
     }
 
-    if (!wasRunning || prevActiveController !== controller) {
+    if (!wasRunning || prevCurrentController !== controller) {
       controller.handleStart();
     }
     
@@ -311,7 +314,7 @@ class WorkRestTimer {
   }
   
   pause() {
-    const activeController = this.getActiveController();
+    const currentController = this.getCurrentController();
     if (this.isRunning()) {
       // Cancel animation frame and clear timeout
       cancelAnimationFrame(this.timer);
@@ -322,17 +325,17 @@ class WorkRestTimer {
       this.timer = null;
       this.pauseButton.textContent = 'Resume';
       
-      // Set active controller to inactive
-      if (activeController) {
-        activeController.handleStop();
+      // Handle stop event for current controller
+      if (currentController) {
+        currentController.handleStop();
       }
-    } else if (activeController) {
+    } else if (currentController) {
       // Resume the timer
       this.startTimer();
       this.pauseButton.textContent = 'Pause';
       
-      // Set active controller to active again
-      activeController.handleStart();
+      // Handle start event for current controller
+      currentController.handleStart();
     }
   }
   
@@ -382,13 +385,13 @@ class WorkRestTimer {
       
       // Only update if enough time has passed (at least 50ms)
       if (elapsedMs >= UPDATE_DELAY) {
-        const activeController = this.getActiveController();
-        if (activeController) {
+        const currentController = this.getCurrentController();
+        if (currentController) {
           // Update based on actual elapsed time
-          const remainingTimeMs = activeController.updateTime(elapsedMs);
+          const remainingTimeMs = currentController.updateTime(elapsedMs);
           
           if (remainingTimeMs <= 0) {
-            this.handleTimeout(activeController);
+            this.handleTimeout(currentController);
             return; // Stop the timer
           }
           

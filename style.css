@@ -29,7 +29,6 @@ body {
 }
 
 .timer {
-  background-color: #222;
   width: 100%;
   flex: 1;
   display: flex;
@@ -41,9 +40,10 @@ body {
   aspect-ratio: 1 / 1;
   max-width: 800px;
   max-height: 45vh;
+  background-color: #222;
 }
 
-.timer.active {
+.timer.current {
   background-color: #444;
 }
 
