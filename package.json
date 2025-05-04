@@ -1,0 +1,29 @@
+{
+  "name": "work-rest-timer",
+  "version": "1.0.0",
+  "description": "A minimalistic work-rest timer with time tracking capabilities",
+  "main": "app.js",
+  "scripts": {
+    "test": "mocha test/**/*.js --exit",
+    "start": "serve ."
+  },
+  "keywords": [
+    "timer",
+    "work",
+    "rest",
+    "pomodoro",
+    "pwa"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "jsdom": "^22.1.0",
+    "mocha": "^10.2.0",
+    "playwright": "^1.40.0",
+    "serve": "^14.2.1"
+  },
+  "scripts": {
+    "test": "mocha test/test.js --timeout 30000 --exit",
+    "start": "serve ."
+  }
+}

@@ -1,1 +1,4 @@
 /.idea/
+**/.claude/settings.local.json
+/test/screenshots/
+/node_modules/
