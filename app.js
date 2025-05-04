@@ -1,5 +1,42 @@
-// PlayerTimerView class to handle UI updates
-class PlayerTimerView {
+// MVC Pattern Implementation
+
+// Model - Holds the timer data and state
+class TimerModel {
+  constructor(id, initialTime) {
+    this.id = id;
+    this.initialTime = initialTime;
+    this.remainingTime = initialTime;
+    this.isActive = false;
+  }
+  
+  updateTime(elapsedMs) {
+    if (elapsedMs > 0 && this.remainingTime > 0) {
+      // Ensure we don't go below zero
+      this.remainingTime = Math.max(0, this.remainingTime - elapsedMs);
+    }
+    return this.remainingTime;
+  }
+  
+  reset() {
+    this.remainingTime = this.initialTime;
+    this.isActive = false;
+  }
+  
+  setActive(isActive) {
+    this.isActive = isActive;
+  }
+  
+  getRemainingTime() {
+    return this.remainingTime;
+  }
+  
+  isTimeUp() {
+    return this.remainingTime <= 0;
+  }
+}
+
+// View - Handles UI display
+class TimerView {
   constructor(element) {
     this.element = element;
     this.timeElement = element.querySelector('.time');
@@ -13,62 +50,66 @@ class PlayerTimerView {
     this.element.classList.remove('active', 'inactive');
     this.element.classList.add(isActive ? 'active' : 'inactive');
   }
+  
+  // Add click event handler
+  onClick(callback) {
+    this.element.addEventListener('click', callback);
+  }
+  
+  // Add vibration feedback
+  addVibration(isRunningCallback) {
+    this.element.addEventListener('click', () => {
+      if (isRunningCallback()) {
+        navigator.vibrate && navigator.vibrate(30);
+      }
+    });
+  }
 }
 
-// Timer player class to encapsulate individual timer logic
-class PlayerTimer {
-  constructor(id, initialTimeInMs) {
-    this.id = id;
-    this.initialTime = initialTimeInMs; // Initial time in milliseconds
-    this.timeRemaining = initialTimeInMs; // Current time in milliseconds
-    this.isActive = false;
+// Controller - Coordinates model and view
+class TimerController {
+  constructor(model, view, timeTrackingStrategy = null) {
+    this.model = model;
+    this.view = view;
+    this.timeTrackingStrategy = timeTrackingStrategy;
     
-    // Create a view for this player
-    this.view = new PlayerTimerView(document.getElementById(`player${id}`));
-    
-    this.setupEventListeners();
+    // Update the view to reflect initial model state
+    this.updateView();
   }
   
-  setupEventListeners() {
-    // Events will be handled by the timer
-  }
-  
-  /**
-   * Updates the player's remaining time based on elapsed milliseconds
-   * @param {number} elapsedMs - Milliseconds elapsed since last update
-   * @returns {number} Remaining time in milliseconds
-   */
   updateTime(elapsedMs) {
-    if (elapsedMs > 0 && this.timeRemaining > 0) {
-      // Ensure we don't go below zero
-      this.timeRemaining = Math.max(0, this.timeRemaining - elapsedMs);
-      this.updateDisplay();
-    }
-    
-    return this.timeRemaining;
+    const remainingTime = this.model.updateTime(elapsedMs);
+    this.updateView();
+    return remainingTime;
   }
   
-  /**
-   * Get the remaining time in milliseconds
-   * @returns {number} Time remaining in milliseconds
-   */
-  getTimeRemaining() {
-    return this.timeRemaining;
-  }
-  
-  reset() {
-    this.timeRemaining = this.initialTime;
-    this.setActive(false);
-    this.updateDisplay();
+  updateView() {
+    this.view.updateDisplay(this.formatTime(this.model.getRemainingTime()));
+    this.view.setActiveState(this.model.isActive);
   }
   
   setActive(isActive) {
-    this.isActive = isActive;
-    this.view.setActiveState(isActive);
+    this.model.setActive(isActive);
+    this.updateView();
+    
+    if (isActive) {
+      this.handleStart();
+    } else if (isActive === false) {
+      this.handleStop();
+    }
   }
   
-  updateDisplay() {
-    this.view.updateDisplay(this.formatTime(this.timeRemaining));
+  reset() {
+    this.model.reset();
+    this.updateView();
+  }
+  
+  isActive() {
+    return this.model.isActive;
+  }
+  
+  getRemainingTime() {
+    return this.model.getRemainingTime();
   }
   
   /**
@@ -91,20 +132,52 @@ class PlayerTimer {
     }
   }
   
-  // Called when this timer becomes active
+  // Hook methods for specialized behavior
   handleStart() {
-    // Implemented by subclasses
+    // Override in subclasses
   }
   
-  // Called when this timer becomes inactive
   handleStop() {
-    // Implemented by subclasses
+    // Override in subclasses
   }
   
-  // Called on timeout
   handleTimeout() {
-    // Implemented by subclasses
+    // Override in subclasses
   }
+}
+
+// Work timer controller with time tracking
+class WorkTimerController extends TimerController {
+  constructor(model, view, timeTrackingStrategy) {
+    super(model, view, timeTrackingStrategy);
+  }
+  
+  handleStart() {
+    if (this.timeTrackingStrategy) {
+      this.timeTrackingStrategy.startTimeEntry();
+    }
+  }
+  
+  handleStop() {
+    if (this.timeTrackingStrategy) {
+      this.timeTrackingStrategy.stopTimeEntry();
+    }
+  }
+  
+  handleTimeout() {
+    if (this.timeTrackingStrategy) {
+      this.timeTrackingStrategy.stopTimeEntry();
+    }
+  }
+}
+
+// Rest timer controller
+class RestTimerController extends TimerController {
+  constructor(model, view) {
+    super(model, view);
+  }
+  
+  // Rest timer doesn't need special handling for time tracking
 }
 
 // Strategy interface for time tracking
@@ -166,7 +239,7 @@ class Rest extends PlayerTimer {
   // Rest timer doesn't need special handling for time tracking
 }
 
-// Work-Rest timer functionality
+// Work-Rest timer functionality - Using MVC pattern
 class WorkRestTimer {
   constructor(player1Seconds, player2Seconds) {
     const player1TimeInMs = player1Seconds * 1000;
@@ -175,10 +248,17 @@ class WorkRestTimer {
     // Create time tracking strategy
     const timeTrackingStrategy = new ExternalApiTimeTracking(ExternalTimerAPI);
     
-    // Initialize players - now using specialized Work and Rest classes
-    this.player1 = new Work(1, player1TimeInMs, timeTrackingStrategy);
-    this.player2 = new Rest(2, player2TimeInMs);
-    this.players = [this.player1, this.player2];
+    // Create models, views, and controllers
+    const workModel = new TimerModel(1, player1TimeInMs);
+    const restModel = new TimerModel(2, player2TimeInMs);
+    
+    const workView = new TimerView(document.getElementById('player1'));
+    const restView = new TimerView(document.getElementById('player2'));
+    
+    this.workController = new WorkTimerController(workModel, workView, timeTrackingStrategy);
+    this.restController = new RestTimerController(restModel, restView);
+    
+    this.controllers = [this.workController, this.restController];
     
     // Controls
     this.controlsElement = document.getElementById('controls');
@@ -193,86 +273,76 @@ class WorkRestTimer {
   }
   
   init() {
-    // Initialize all players' displays with proper formatting
-    this.players.forEach(player => {
-      // Force an update of the time display with the correct format
-      player.updateDisplay();
-    });
-    
     // Set up control buttons
     this.resetButton.addEventListener('click', () => this.reset());
     this.pauseButton.addEventListener('click', () => this.pause());
     
-    // Add haptic feedback when timer is clicked
-    const addVibration = (element) => {
-      element.addEventListener('click', () => {
-        if (this.isRunning()) {
-          navigator.vibrate && navigator.vibrate(30);
-        }
-      });
-    };
+    // Set up click handlers and vibration for controllers
+    this.controllers.forEach(controller => {
+      // Add click handler
+      controller.view.onClick(() => this.start(controller));
+      
+      // Add haptic feedback
+      controller.view.addVibration(() => this.isRunning());
+    });
     
-    this.players.forEach(player => addVibration(player.view.element));
-
-    this.players.forEach(player => player.view.element.addEventListener('click', () => this.start(player)));
-
     this.updateDisplay();
   }
 
   /**
-   * @returns {PlayerTimer|null}
+   * @returns {TimerController|null}
    */
-  getActivePlayer() {
-    return this.players.find(player => player.isActive) || null;
+  getActiveController() {
+    return this.controllers.find(controller => controller.isActive()) || null;
   }
   
-  getOpponentPlayer(player) {
-    return player === this.player1 ? this.player2 : this.player1;
-  }
-  
-  hasActivePlayer() {
-    return this.players.some(player => player.isActive);
+  hasActiveController() {
+    return this.controllers.some(controller => controller.isActive());
   }
   
   isRunning() {
     return this.timer !== null;
   }
   
-  setActivePlayer(player) {
-    this.players.forEach(p => p.setActive(p === player));
+  setActiveController(controller) {
+    this.controllers.forEach(c => c.setActive(c === controller));
   }
   
   updateDisplay() {
     // Show/hide pause and reset controls based on timer state
-    if (this.isRunning() || this.hasActivePlayer()) {
+    if (this.isRunning() || this.hasActiveController()) {
       this.controlsElement.classList.remove('hidden');
     } else {
       this.controlsElement.classList.add('hidden');
     }
   }
   
-  // Activates the specified player's timer
+  // Activates the specified controller's timer
   // If another timer was active, it stops that timer first
-  start(player) {
-    const prevActivePlayer = this.getActivePlayer();
-    const wasIsRunning = this.isRunning();
-    if (wasIsRunning && prevActivePlayer != null && prevActivePlayer !== player) {
-      prevActivePlayer.handleStop()
+  start(controller) {
+    const prevActiveController = this.getActiveController();
+    const wasRunning = this.isRunning();
+    
+    // If another controller was active, inactivate it
+    if (wasRunning && prevActiveController && prevActiveController !== controller) {
+      prevActiveController.setActive(false);
     }
-    this.setActivePlayer(player);
-    if (!wasIsRunning) {
+    
+    // Activate the new controller
+    this.setActiveController(controller);
+    
+    // Start the timer if not already running
+    if (!wasRunning) {
       this.startTimer();
       this.controlsElement.classList.remove('hidden');
       this.pauseButton.textContent = 'Pause';
     }
-    if (!wasIsRunning || prevActivePlayer !== player) {
-      player.handleStart();
-    }
+    
     this.updateDisplay();
   }
   
   pause() {
-    const activePlayer = this.getActivePlayer();
+    const activeController = this.getActiveController();
     if (this.isRunning()) {
       // Cancel animation frame and clear timeout
       cancelAnimationFrame(this.timer);
@@ -283,26 +353,25 @@ class WorkRestTimer {
       this.timer = null;
       this.pauseButton.textContent = 'Resume';
       
-      // Notify the active player that it's being paused
-      activePlayer.handleStop();
-    } else if (activePlayer != null) {
+      // Set active controller to inactive
+      if (activeController) {
+        activeController.setActive(false);
+      }
+    } else if (activeController) {
       // Resume the timer
       this.startTimer();
       this.pauseButton.textContent = 'Pause';
       
-      // Notify the active player that it's being resumed
-      activePlayer.handleStart();
+      // Set active controller to active again
+      activeController.setActive(true);
     }
   }
   
   reset() {
-    // Notify the active player about the reset
-    const activePlayer = this.getActivePlayer();
-    if (activePlayer) {
-      activePlayer.handleStop();
-    }
+    // Get the active controller
+    const activeController = this.getActiveController();
     
-    // Stop the timer directly instead of using pause()
+    // Stop the timer directly
     if (this.timer) {
       cancelAnimationFrame(this.timer);
       this.timer = null;
@@ -316,8 +385,9 @@ class WorkRestTimer {
     // Reset button state
     this.pauseButton.textContent = 'Pause';
     
-    // Reset players
-    this.players.forEach(player => player.reset());
+    // Reset all controllers
+    this.controllers.forEach(controller => controller.reset());
+    
     this.controlsElement.classList.add('hidden');
     this.updateDisplay();
   }
@@ -345,20 +415,20 @@ class WorkRestTimer {
       
       // Only update if enough time has passed (at least 50ms)
       if (elapsedMs >= UPDATE_DELAY) {
-        const activePlayer = this.getActivePlayer();
-        if (activePlayer) {
+        const activeController = this.getActiveController();
+        if (activeController) {
           // Update based on actual elapsed time
-          const remainingTimeMs = activePlayer.updateTime(elapsedMs);
+          const remainingTimeMs = activeController.updateTime(elapsedMs);
           
           if (remainingTimeMs <= 0) {
-            this.handleTimeout(activePlayer);
+            this.handleTimeout(activeController);
             return; // Stop the timer
           }
           
           // Update the last update time
           lastUpdateTime = now;
           
-          // Update display after time change
+          // Update display
           this.updateDisplay();
         }
       }
@@ -374,7 +444,7 @@ class WorkRestTimer {
     this.timer = requestAnimationFrame(updateTimer);
   }
   
-  handleTimeout(player) {
+  handleTimeout(controller) {
     // Stop the timer - cancel both animation frame and timeout
     if (this.timer) {
       cancelAnimationFrame(this.timer);
@@ -386,8 +456,8 @@ class WorkRestTimer {
       this.timeoutId = null;
     }
     
-    // Let the player handle its specific timeout behavior
-    player.handleTimeout();
+    // Let the controller handle its specific timeout behavior
+    controller.handleTimeout();
   }
 }
 
@@ -495,9 +565,9 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('togglProject', togglProjectInput.value);
     localStorage.setItem('togglDescription', togglDescriptionInput.value);
     
-    // Update the initial times for the players without resetting current timers
-    workRestTimer.player1.initialTime = player1NewTimeSeconds * 1000;
-    workRestTimer.player2.initialTime = player2NewTimeSeconds * 1000;
+    // Update the initial times for the timer models without resetting current timers
+    workRestTimer.workController.model.initialTime = player1NewTimeSeconds * 1000;
+    workRestTimer.restController.model.initialTime = player2NewTimeSeconds * 1000;
     
     // No need to reset the timer or update the display if it's already running
     
