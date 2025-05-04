@@ -1,5 +1,5 @@
-// Player class to encapsulate individual player logic
-class ChessPlayer {
+// Timer player class to encapsulate individual timer logic
+class TimerPlayer {
   constructor(id, initialTimeInMs) {
     this.id = id;
     this.initialTime = initialTimeInMs; // Initial time in milliseconds
@@ -95,8 +95,8 @@ class ChessPlayer {
   }
 }
 
-// Work timer that tracks time in Toggl
-class Work extends ChessPlayer {
+// Work timer that tracks time via external API
+class Work extends TimerPlayer {
   constructor(id, initialTimeInMs) {
     super(id, initialTimeInMs);
   }
@@ -118,16 +118,16 @@ class Work extends ChessPlayer {
 }
 
 // Rest timer
-class Rest extends ChessPlayer {
+class Rest extends TimerPlayer {
   constructor(id, initialTimeInMs) {
     super(id, initialTimeInMs);
   }
   
-  // Rest timer doesn't need special handling for Toggl
+  // Rest timer doesn't need special handling for time tracking
 }
 
-// Chess timer functionality
-class ChessTimer {
+// Work-Rest timer functionality
+class WorkRestTimer {
   constructor(player1Seconds, player2Seconds) {
     const player1TimeInMs = player1Seconds * 1000;
     const player2TimeInMs = player2Seconds * 1000;
@@ -181,7 +181,7 @@ class ChessTimer {
   }
 
   /**
-   * @returns {ChessPlayer|null}
+   * @returns {TimerPlayer|null}
    */
   getActivePlayer() {
     return this.players.find(player => player.isActive) || null;
@@ -364,7 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const player2TimeSeconds = parseFloat(localStorage.getItem('player2Time')) || initialTimeInSeconds;
   
   // Initialize with saved or default times in seconds
-  const timer = new ChessTimer(player1TimeSeconds, player2TimeSeconds);
+  const workRestTimer = new WorkRestTimer(player1TimeSeconds, player2TimeSeconds);
   
   // Set up settings modal functionality
   const settingsButton = document.getElementById('settings');
@@ -456,8 +456,8 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('togglDescription', togglDescriptionInput.value);
     
     // Update the initial times for the players without resetting current timers
-    timer.player1.initialTime = player1NewTimeSeconds * 1000;
-    timer.player2.initialTime = player2NewTimeSeconds * 1000;
+    workRestTimer.player1.initialTime = player1NewTimeSeconds * 1000;
+    workRestTimer.player2.initialTime = player2NewTimeSeconds * 1000;
     
     // No need to reset the timer or update the display if it's already running
     
