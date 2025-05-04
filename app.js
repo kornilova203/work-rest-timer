@@ -161,18 +161,10 @@ class ChessTimer {
     this.pauseButton.addEventListener('click', () => this.pause());
     
     // Setup player 1 click handler
-    this.player1.element.addEventListener('click', () => {
-      if (!this.isRunning() || this.player1.isActive) {
-        this.start(this.player2); // Start/switch to player 2
-      }
-    });
+    this.player1.element.addEventListener('click', () => this.start(this.player1));
     
     // Setup player 2 click handler
-    this.player2.element.addEventListener('click', () => {
-      if (!this.isRunning() || this.player2.isActive) {
-        this.start(this.player1); // Start/switch to player 1
-      }
-    });
+    this.player2.element.addEventListener('click', () => this.start(this.player2));
     
     // Add haptic feedback when timer is clicked
     const addVibration = (element) => {
@@ -220,20 +212,21 @@ class ChessTimer {
     }
   }
   
-  // Combined method that handles both starting the timer with a specific player
-  // and switching players during gameplay
+  // Activates the specified player's timer
+  // If another timer was active, it stops that timer first
   start(player) {
     const prevActivePlayer = this.getActivePlayer();
-    if (prevActivePlayer != null && prevActivePlayer !== player && this.isRunning()) {
+    const wasIsRunning = this.isRunning();
+    if (wasIsRunning && prevActivePlayer != null && prevActivePlayer !== player) {
       prevActivePlayer.handleStop()
     }
     this.setActivePlayer(player);
-    if (!this.isRunning()) {
+    if (!wasIsRunning) {
       this.startTimer();
       this.controlsElement.classList.remove('hidden');
       this.pauseButton.textContent = 'Pause';
     }
-    if (prevActivePlayer !== player) {
+    if (!wasIsRunning || prevActivePlayer !== player) {
       player.handleStart();
     }
     this.updateDisplay();
