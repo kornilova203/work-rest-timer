@@ -108,6 +108,10 @@ class TimerController {
     this.model.resetRemainingTime();
     this.setCurrent(false, wasRunning, false)
   }
+
+  resetRemainingTime() {
+    this.model.resetRemainingTime()
+  }
   
   isCurrent() {
     return this.model.isCurrent;
@@ -256,7 +260,7 @@ class WorkRestTimer {
       controller.view.addVibration(() => this.isRunning());
     });
     
-    this.updateDisplay();
+    this.updateButtonsVisibility();
   }
 
   /**
@@ -277,8 +281,14 @@ class WorkRestTimer {
   setCurrentController(controller, wasRunning, isRunning) {
     this.controllers.forEach(c => c.setCurrent(c === controller, wasRunning, isRunning));
   }
+
+  updateView() {
+    this.workController.updateView();
+    this.restController.updateView();
+    this.updateButtonsVisibility();
+  }
   
-  updateDisplay() {
+  updateButtonsVisibility() {
     // Show/hide pause and reset controls based on timer state
     if (this.isRunning() || this.hasCurrentController()) {
       this.controlsElement.classList.remove('hidden');
@@ -310,7 +320,7 @@ class WorkRestTimer {
       controller.handleStart();
     }
     
-    this.updateDisplay();
+    this.updateButtonsVisibility();
   }
   
   pause() {
@@ -359,7 +369,7 @@ class WorkRestTimer {
     this.controllers.forEach(controller => controller.reset(wasRunning));
     
     this.controlsElement.classList.add('hidden');
-    this.updateDisplay();
+    this.updateButtonsVisibility();
   }
   
   startTimer() {
@@ -371,7 +381,7 @@ class WorkRestTimer {
       clearTimeout(this.timeoutId);
     }
     
-    this.updateDisplay();
+    this.updateButtonsVisibility();
     
     // Record the start time when we begin the timer
     let lastUpdateTime = Date.now();
@@ -399,7 +409,7 @@ class WorkRestTimer {
           lastUpdateTime = now;
           
           // Update display
-          this.updateDisplay();
+          this.updateButtonsVisibility();
         }
       }
       
@@ -538,11 +548,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update the initial times for the timer models without resetting current timers
     workRestTimer.workController.model.initialTime = player1NewTimeSeconds * 1000;
     workRestTimer.restController.model.initialTime = player2NewTimeSeconds * 1000;
-    
-    // No need to reset the timer or update the display if it's already running
+
+    if (!workRestTimer.isRunning()) {
+      workRestTimer.workController.resetRemainingTime()
+      workRestTimer.workController.resetRemainingTime()
+    }
     
     // Close the modal
     settingsModal.classList.add('hidden');
+
+    workRestTimer.workController.updateView();
+    workRestTimer.restController.updateView();
+    workRestTimer.updateButtonsVisibility();
   });
   
   // Function to render time entries list
