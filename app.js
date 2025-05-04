@@ -69,12 +69,16 @@ class TimerController {
   /**
    * @param model {TimerModel}
    * @param view {TimerView}
+   * @param startCallback
    * @param timeTrackingStrategy {TimeTrackingStrategy}
    */
-  constructor(model, view, timeTrackingStrategy = null) {
+  constructor(model, view, startCallback, timeTrackingStrategy = null) {
     this.model = model;
     this.view = view;
     this.timeTrackingStrategy = timeTrackingStrategy;
+
+    // Add click handler
+    this.view.onClick(() => startCallback(this));
     
     // Update the view to reflect initial model state
     this.updateView();
@@ -93,17 +97,61 @@ class TimerController {
   
   setCurrent(isCurrent, wasRunning, isRunning) {
     const wasCurrent = this.model.isCurrent;
-    if (wasCurrent && wasRunning) {
+    if (this.stoppedRunning(wasCurrent, isCurrent, wasRunning, isRunning)) {
       this.handleStop();
     }
     this.model.setCurrent(isCurrent);
     this.updateView();
 
-    if (isCurrent && isRunning) {
+    if (this.startedRunning(wasCurrent, isCurrent, wasRunning, isRunning)) {
       this.handleStart();
     }
   }
-  
+
+  /**
+   * Determines if the timer has stopped running.
+   * This occurs when:
+   * 1. The timer was current and running, but is no longer current
+   * 2. The timer remains current, but the overall timer has stopped running
+   * 
+   * @param {boolean} wasCurrent - Whether the timer was previously current
+   * @param {boolean} isCurrent - Whether the timer is now current
+   * @param {boolean} wasRunning - Whether the timer was previously running
+   * @param {boolean} isRunning - Whether the timer is now running
+   * @returns {boolean} - Whether the timer has stopped running
+   */
+  stoppedRunning(wasCurrent, isCurrent, wasRunning, isRunning) {
+    // Case 1: Was current and running, now no longer current
+    const stoppedBeingCurrent = wasCurrent && !isCurrent && wasRunning;
+    
+    // Case 2: Still current but timer has stopped
+    const stoppedWhileCurrent = wasCurrent && isCurrent && wasRunning && !isRunning;
+    
+    return stoppedBeingCurrent || stoppedWhileCurrent;
+  }
+
+  /**
+   * Determines if the timer has started running.
+   * This occurs when:
+   * 1. The timer wasn't current, but is now current and running
+   * 2. The timer was already current but not running, and is now running
+   * 
+   * @param {boolean} wasCurrent - Whether the timer was previously current
+   * @param {boolean} isCurrent - Whether the timer is now current
+   * @param {boolean} wasRunning - Whether the timer was previously running
+   * @param {boolean} isRunning - Whether the timer is now running
+   * @returns {boolean} - Whether the timer has started running
+   */
+  startedRunning(wasCurrent, isCurrent, wasRunning, isRunning) {
+    // Case 1: Wasn't current, now is current and running
+    const startedBeingCurrent = !wasCurrent && isCurrent && isRunning;
+    
+    // Case 2: Was already current but not running, now is running
+    const startedWhileCurrent = wasCurrent && isCurrent && !wasRunning && isRunning;
+    
+    return startedBeingCurrent || startedWhileCurrent;
+  }
+
   reset(wasRunning) {
     this.model.resetRemainingTime();
     this.setCurrent(false, wasRunning, false)
@@ -153,8 +201,8 @@ class TimerController {
 
 // Work timer controller with time tracking
 class WorkTimerController extends TimerController {
-  constructor(model, view, timeTrackingStrategy) {
-    super(model, view, timeTrackingStrategy);
+  constructor(model, view, startCallback, timeTrackingStrategy) {
+    super(model, view, startCallback, timeTrackingStrategy);
   }
   
   handleStart() {
@@ -178,8 +226,8 @@ class WorkTimerController extends TimerController {
 
 // Rest timer controller
 class RestTimerController extends TimerController {
-  constructor(model, view) {
-    super(model, view);
+  constructor(model, view, startCallback) {
+    super(model, view, startCallback);
   }
   
   // Rest timer doesn't need special handling for time tracking
@@ -228,9 +276,10 @@ class WorkRestTimer {
     
     const workView = new TimerView(document.getElementById('player1'));
     const restView = new TimerView(document.getElementById('player2'));
-    
-    this.workController = new WorkTimerController(workModel, workView, timeTrackingStrategy);
-    this.restController = new RestTimerController(restModel, restView);
+
+    let startCallback = (controller) => this.start(controller);
+    this.workController = new WorkTimerController(workModel, workView, startCallback, timeTrackingStrategy);
+    this.restController = new RestTimerController(restModel, restView, startCallback);
     
     this.controllers = [this.workController, this.restController];
     
@@ -253,9 +302,6 @@ class WorkRestTimer {
     
     // Set up click handlers and vibration for controllers
     this.controllers.forEach(controller => {
-      // Add click handler
-      controller.view.onClick(() => this.start(controller));
-      
       // Add haptic feedback
       controller.view.addVibration(() => this.isRunning());
     });
@@ -300,11 +346,7 @@ class WorkRestTimer {
   // Activates the specified controller's timer
   // If another timer was current, it stops that timer first
   start(controller) {
-    const prevCurrentController = this.getCurrentController();
     const wasRunning = this.isRunning();
-    if (wasRunning && prevCurrentController != null && prevCurrentController !== controller) {
-      prevCurrentController.handleStop()
-    }
     
     // Set the new controller as current
     this.setCurrentController(controller, wasRunning, true);
@@ -314,10 +356,6 @@ class WorkRestTimer {
       this.startTimer();
       this.controlsElement.classList.remove('hidden');
       this.pauseButton.textContent = 'Pause';
-    }
-
-    if (!wasRunning || prevCurrentController !== controller) {
-      controller.handleStart();
     }
     
     this.updateButtonsVisibility();
