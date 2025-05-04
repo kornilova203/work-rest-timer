@@ -107,25 +107,53 @@ class PlayerTimer {
   }
 }
 
-// Work timer that tracks time via external API
+// Strategy interface for time tracking
+class TimeTrackingStrategy {
+  startTimeEntry() {}
+  stopTimeEntry() {}
+  exportCSV() {}
+}
+
+// Concrete strategy implementation using ExternalTimerAPI
+class ExternalApiTimeTracking extends TimeTrackingStrategy {
+  constructor(api) {
+    super();
+    this.api = api;
+  }
+  
+  startTimeEntry() {
+    this.api.startTimeEntry();
+  }
+  
+  stopTimeEntry() {
+    this.api.stopTimeEntry();
+  }
+  
+  exportCSV() {
+    return this.api.exportCSV();
+  }
+}
+
+// Work timer that tracks time via injected time tracking strategy
 class Work extends PlayerTimer {
-  constructor(id, initialTimeInMs) {
+  constructor(id, initialTimeInMs, timeTrackingStrategy) {
     super(id, initialTimeInMs);
+    this.timeTrackingStrategy = timeTrackingStrategy;
   }
   
   handleStart() {
-    // Start external time entry when work timer becomes active
-    ExternalTimerAPI.startTimeEntry();
+    // Start time entry when work timer becomes active
+    this.timeTrackingStrategy.startTimeEntry();
   }
   
   handleStop() {
-    // Stop external time entry when work timer becomes inactive
-    ExternalTimerAPI.stopTimeEntry();
+    // Stop time entry when work timer becomes inactive
+    this.timeTrackingStrategy.stopTimeEntry();
   }
   
   handleTimeout() {
-    // Stop external time entry when work timer times out
-    ExternalTimerAPI.stopTimeEntry();
+    // Stop time entry when work timer times out
+    this.timeTrackingStrategy.stopTimeEntry();
   }
 }
 
@@ -144,8 +172,11 @@ class WorkRestTimer {
     const player1TimeInMs = player1Seconds * 1000;
     const player2TimeInMs = player2Seconds * 1000;
     
+    // Create time tracking strategy
+    const timeTrackingStrategy = new ExternalApiTimeTracking(ExternalTimerAPI);
+    
     // Initialize players - now using specialized Work and Rest classes
-    this.player1 = new Work(1, player1TimeInMs);
+    this.player1 = new Work(1, player1TimeInMs, timeTrackingStrategy);
     this.player2 = new Rest(2, player2TimeInMs);
     this.players = [this.player1, this.player2];
     
@@ -425,7 +456,8 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Handle export button click
   togglExportButton.addEventListener('click', () => {
-    const csvContent = ExternalTimerAPI.exportCSV();
+    const timeTrackingStrategy = workRestTimer.player1.timeTrackingStrategy;
+    const csvContent = timeTrackingStrategy.exportCSV();
     if (csvContent) {
       const date = new Date().toISOString().split('T')[0];
       downloadCSV(csvContent, `time-entries-${date}.csv`);
@@ -475,6 +507,8 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Function to render time entries list
   function renderTimeEntries() {
+    // We still need to use ExternalTimerAPI.storage directly here since 
+    // we didn't fully implement the strategy pattern for all operations
     const entries = ExternalTimerAPI.storage.getEntries();
     entriesList.innerHTML = '';
     
@@ -524,7 +558,8 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Export entries as CSV
   exportEntriesButton.addEventListener('click', () => {
-    const csvContent = ExternalTimerAPI.exportCSV();
+    const timeTrackingStrategy = workRestTimer.player1.timeTrackingStrategy;
+    const csvContent = timeTrackingStrategy.exportCSV();
     if (csvContent) {
       const date = new Date().toISOString().split('T')[0];
       downloadCSV(csvContent, `time-entries-${date}.csv`);
@@ -534,6 +569,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Clear all entries
   clearEntriesButton.addEventListener('click', () => {
     if (confirm('Are you sure you want to delete all time entries? This cannot be undone.')) {
+      // Note: This operation isn't part of our strategy pattern yet
       ExternalTimerAPI.storage.clearEntries();
       renderTimeEntries();
     }
