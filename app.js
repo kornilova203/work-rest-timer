@@ -17,9 +17,8 @@ class TimerModel {
     return this.remainingTime;
   }
   
-  reset() {
+  resetRemainingTime() {
     this.remainingTime = this.initialTime;
-    this.isActive = false;
   }
   
   setActive(isActive) {
@@ -28,10 +27,6 @@ class TimerModel {
   
   getRemainingTime() {
     return this.remainingTime;
-  }
-  
-  isTimeUp() {
-    return this.remainingTime <= 0;
   }
 }
 
@@ -68,6 +63,11 @@ class TimerView {
 
 // Controller - Coordinates model and view
 class TimerController {
+  /**
+   * @param model {TimerModel}
+   * @param view {TimerView}
+   * @param timeTrackingStrategy {TimeTrackingStrategy}
+   */
   constructor(model, view, timeTrackingStrategy = null) {
     this.model = model;
     this.view = view;
@@ -88,28 +88,26 @@ class TimerController {
     this.view.setActiveState(this.model.isActive);
   }
   
-  setActive(isActive) {
+  setActive(isActive, wasRunning, isRunning) {
+    const wasActive = this.model.isActive;
+    if (wasActive && wasRunning) {
+      this.handleStop();
+    }
     this.model.setActive(isActive);
     this.updateView();
-    
-    if (isActive) {
+
+    if (isActive && isRunning) {
       this.handleStart();
-    } else if (isActive === false) {
-      this.handleStop();
     }
   }
   
-  reset() {
-    this.model.reset();
-    this.updateView();
+  reset(wasRunning) {
+    this.model.resetRemainingTime();
+    this.setActive(false, wasRunning, false)
   }
   
   isActive() {
     return this.model.isActive;
-  }
-  
-  getRemainingTime() {
-    return this.model.getRemainingTime();
   }
   
   /**
@@ -207,37 +205,6 @@ class ExternalApiTimeTracking extends TimeTrackingStrategy {
   }
 }
 
-// Work timer that tracks time via injected time tracking strategy
-class Work extends PlayerTimer {
-  constructor(id, initialTimeInMs, timeTrackingStrategy) {
-    super(id, initialTimeInMs);
-    this.timeTrackingStrategy = timeTrackingStrategy;
-  }
-  
-  handleStart() {
-    // Start time entry when work timer becomes active
-    this.timeTrackingStrategy.startTimeEntry();
-  }
-  
-  handleStop() {
-    // Stop time entry when work timer becomes inactive
-    this.timeTrackingStrategy.stopTimeEntry();
-  }
-  
-  handleTimeout() {
-    // Stop time entry when work timer times out
-    this.timeTrackingStrategy.stopTimeEntry();
-  }
-}
-
-// Rest timer
-class Rest extends PlayerTimer {
-  constructor(id, initialTimeInMs) {
-    super(id, initialTimeInMs);
-  }
-  
-  // Rest timer doesn't need special handling for time tracking
-}
 
 // Work-Rest timer functionality - Using MVC pattern
 class WorkRestTimer {
@@ -304,8 +271,8 @@ class WorkRestTimer {
     return this.timer !== null;
   }
   
-  setActiveController(controller) {
-    this.controllers.forEach(c => c.setActive(c === controller));
+  setActiveController(controller, wasRunning, isRunning) {
+    this.controllers.forEach(c => c.setActive(c === controller, wasRunning, isRunning));
   }
   
   updateDisplay() {
@@ -322,20 +289,22 @@ class WorkRestTimer {
   start(controller) {
     const prevActiveController = this.getActiveController();
     const wasRunning = this.isRunning();
-    
-    // If another controller was active, inactivate it
-    if (wasRunning && prevActiveController && prevActiveController !== controller) {
-      prevActiveController.setActive(false);
+    if (wasRunning && prevActiveController != null && prevActiveController !== controller) {
+      prevActiveController.handleStop()
     }
     
     // Activate the new controller
-    this.setActiveController(controller);
+    this.setActiveController(controller, wasRunning, true);
     
     // Start the timer if not already running
     if (!wasRunning) {
       this.startTimer();
       this.controlsElement.classList.remove('hidden');
       this.pauseButton.textContent = 'Pause';
+    }
+
+    if (!wasRunning || prevActiveController !== controller) {
+      controller.handleStart();
     }
     
     this.updateDisplay();
@@ -355,7 +324,7 @@ class WorkRestTimer {
       
       // Set active controller to inactive
       if (activeController) {
-        activeController.setActive(false);
+        activeController.handleStop();
       }
     } else if (activeController) {
       // Resume the timer
@@ -363,14 +332,12 @@ class WorkRestTimer {
       this.pauseButton.textContent = 'Pause';
       
       // Set active controller to active again
-      activeController.setActive(true);
+      activeController.handleStart();
     }
   }
   
   reset() {
-    // Get the active controller
-    const activeController = this.getActiveController();
-    
+    let wasRunning = this.isRunning();
     // Stop the timer directly
     if (this.timer) {
       cancelAnimationFrame(this.timer);
@@ -386,7 +353,7 @@ class WorkRestTimer {
     this.pauseButton.textContent = 'Pause';
     
     // Reset all controllers
-    this.controllers.forEach(controller => controller.reset());
+    this.controllers.forEach(controller => controller.reset(wasRunning));
     
     this.controlsElement.classList.add('hidden');
     this.updateDisplay();
@@ -526,7 +493,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Handle export button click
   togglExportButton.addEventListener('click', () => {
-    const timeTrackingStrategy = workRestTimer.player1.timeTrackingStrategy;
+    const timeTrackingStrategy = workRestTimer.workController.timeTrackingStrategy;
     const csvContent = timeTrackingStrategy.exportCSV();
     if (csvContent) {
       const date = new Date().toISOString().split('T')[0];
@@ -538,7 +505,7 @@ document.addEventListener('DOMContentLoaded', () => {
   saveSettingsButton.addEventListener('click', () => {
     // Parse time values directly to seconds from HH:MM:SS format
     const parseTimeToSeconds = (timeString) => {
-      let parts = timeString.split(':').map(val => parseInt(val) || 0);
+      let parts = timeString.split(':').map(v => parseInt(v) || 0);
       
       // Handle both HH:MM:SS and HH:MM formats
       if (parts.length === 2) {
@@ -628,7 +595,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Export entries as CSV
   exportEntriesButton.addEventListener('click', () => {
-    const timeTrackingStrategy = workRestTimer.player1.timeTrackingStrategy;
+    const timeTrackingStrategy = workRestTimer.workController.timeTrackingStrategy;
     const csvContent = timeTrackingStrategy.exportCSV();
     if (csvContent) {
       const date = new Date().toISOString().split('T')[0];
