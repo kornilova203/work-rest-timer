@@ -1,12 +1,30 @@
+// PlayerTimerView class to handle UI updates
+class PlayerTimerView {
+  constructor(element) {
+    this.element = element;
+    this.timeElement = element.querySelector('.time');
+  }
+  
+  updateDisplay(formattedTime) {
+    this.timeElement.textContent = formattedTime;
+  }
+  
+  setActiveState(isActive) {
+    this.element.classList.remove('active', 'inactive');
+    this.element.classList.add(isActive ? 'active' : 'inactive');
+  }
+}
+
 // Timer player class to encapsulate individual timer logic
-class TimerPlayer {
+class PlayerTimer {
   constructor(id, initialTimeInMs) {
     this.id = id;
     this.initialTime = initialTimeInMs; // Initial time in milliseconds
     this.timeRemaining = initialTimeInMs; // Current time in milliseconds
-    this.element = document.getElementById(`player${id}`);
-    this.timeElement = this.element.querySelector('.time');
     this.isActive = false;
+    
+    // Create a view for this player
+    this.view = new PlayerTimerView(document.getElementById(`player${id}`));
     
     this.setupEventListeners();
   }
@@ -46,17 +64,11 @@ class TimerPlayer {
   
   setActive(isActive) {
     this.isActive = isActive;
-    this.element.classList.remove('active', 'inactive');
-    
-    if (isActive) {
-      this.element.classList.add('active');
-    } else if (isActive === false) { // Could be null which means no active state
-      this.element.classList.add('inactive');
-    }
+    this.view.setActiveState(isActive);
   }
   
   updateDisplay() {
-    this.timeElement.textContent = this.formatTime(this.timeRemaining);
+    this.view.updateDisplay(this.formatTime(this.timeRemaining));
   }
   
   /**
@@ -96,7 +108,7 @@ class TimerPlayer {
 }
 
 // Work timer that tracks time via external API
-class Work extends TimerPlayer {
+class Work extends PlayerTimer {
   constructor(id, initialTimeInMs) {
     super(id, initialTimeInMs);
   }
@@ -118,7 +130,7 @@ class Work extends TimerPlayer {
 }
 
 // Rest timer
-class Rest extends TimerPlayer {
+class Rest extends PlayerTimer {
   constructor(id, initialTimeInMs) {
     super(id, initialTimeInMs);
   }
@@ -160,12 +172,6 @@ class WorkRestTimer {
     this.resetButton.addEventListener('click', () => this.reset());
     this.pauseButton.addEventListener('click', () => this.pause());
     
-    // Setup player 1 click handler
-    this.player1.element.addEventListener('click', () => this.start(this.player1));
-    
-    // Setup player 2 click handler
-    this.player2.element.addEventListener('click', () => this.start(this.player2));
-    
     // Add haptic feedback when timer is clicked
     const addVibration = (element) => {
       element.addEventListener('click', () => {
@@ -175,13 +181,15 @@ class WorkRestTimer {
       });
     };
     
-    this.players.forEach(player => addVibration(player.element));
-    
+    this.players.forEach(player => addVibration(player.view.element));
+
+    this.players.forEach(player => player.view.element.addEventListener('click', () => this.start(player)));
+
     this.updateDisplay();
   }
 
   /**
-   * @returns {TimerPlayer|null}
+   * @returns {PlayerTimer|null}
    */
   getActivePlayer() {
     return this.players.find(player => player.isActive) || null;
