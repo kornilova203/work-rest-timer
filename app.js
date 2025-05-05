@@ -306,20 +306,11 @@ class WorkRestTimer {
       controller.view.addVibration(() => this.isRunning());
     });
     
-    // Initialize the correct icon state
-    const pauseIcon = this.pauseButton.querySelector('.pause-icon');
-    const playIcon = this.pauseButton.querySelector('.play-icon');
+    // No need to initialize the play/pause button icons here,
+    // as the play/pause button should be hidden after page refresh
+    // because no timer is selected.
     
-    if (pauseIcon && playIcon) {
-      if (this.isRunning()) {
-        pauseIcon.classList.remove('hidden');
-        playIcon.classList.add('hidden');
-      } else {
-        pauseIcon.classList.add('hidden');
-        playIcon.classList.remove('hidden');
-      }
-    }
-    
+    // Update visibility of controls
     this.updateButtonsVisibility();
   }
 
@@ -352,8 +343,10 @@ class WorkRestTimer {
     // Show/hide reset control based on timer state
     if (this.isRunning() || this.hasCurrentController()) {
       this.controlsElement.classList.remove('hidden');
+      this.pauseButton.classList.remove('hidden');
     } else {
       this.controlsElement.classList.add('hidden');
+      this.pauseButton.classList.add('hidden');
     }
   }
   
@@ -368,7 +361,6 @@ class WorkRestTimer {
     // Start the timer if not already running
     if (!wasRunning) {
       this.startTimer();
-      this.controlsElement.classList.remove('hidden');
       
       // Show pause icon, hide play icon
       this.pauseButton.querySelector('.pause-icon').classList.remove('hidden');
@@ -426,15 +418,10 @@ class WorkRestTimer {
       this.timeoutId = null;
     }
     
-    // Reset button state to pause icon
-    this.pauseButton.querySelector('.pause-icon').classList.remove('hidden');
-    this.pauseButton.querySelector('.play-icon').classList.add('hidden');
-    this.pauseButton.setAttribute('aria-label', 'Pause');
-    
-    // Reset all controllers
+    // Reset all controllers (this ensures no controller is current)
     this.controllers.forEach(controller => controller.reset(wasRunning));
     
-    this.controlsElement.classList.add('hidden');
+    // Update visibility (will hide all controls since no timer is current)
     this.updateButtonsVisibility();
   }
   
