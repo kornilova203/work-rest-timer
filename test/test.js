@@ -324,4 +324,122 @@ describe('Work-Rest Timer Visual Tests', function() {
     
     console.log('Pause test completed successfully!');
   });
+  
+  it('should remember initial times, create work time entries, and reset timers properly', async function() {
+    // Take a screenshot of the initial state
+    await page.screenshot({ path: path.join(screenshotsDir, 'reset-test-01-initial.png') });
+    
+    // Check that there are no entries at the start of the test
+    await assertNoTimeEntries();
+    
+    // Get initial times from both timers
+    const initialWorkTime = await page.textContent('#player1 .time');
+    const initialRestTime = await page.textContent('#player2 .time');
+    
+    console.log(`Initial times - Work: ${initialWorkTime}, Rest: ${initialRestTime}`);
+    
+    // Start rest timer first
+    await page.click('#player2');
+    console.log('Started rest timer');
+    
+    // Check that rest timer has the "current" class
+    const isRestTimerActive = await page.evaluate(() => {
+      return document.getElementById('player2').classList.contains('current');
+    });
+    assert.ok(isRestTimerActive, 'Rest timer should be active after clicking it');
+    
+    await page.screenshot({ path: path.join(screenshotsDir, 'reset-test-02-rest-timer-active.png') });
+    
+    // Capture rest timer value right after starting
+    const restTimeAfterStart = await page.textContent('#player2 .time');
+    console.log(`Rest timer value after starting: ${restTimeAfterStart}`);
+    
+    // Wait for a few seconds to simulate rest time
+    await page.waitForTimeout(2000);
+    console.log('Waited 2 seconds on rest timer');
+    
+    // Capture rest timer value after waiting
+    const restTimeAfterWaiting = await page.textContent('#player2 .time');
+    console.log(`Rest timer value after waiting: ${restTimeAfterWaiting}`);
+    
+    // Verify rest timer time has decreased
+    assert.notStrictEqual(restTimeAfterWaiting, restTimeAfterStart, 'Rest timer time should have changed while active');
+    
+    // Start work timer (switching from rest)
+    await page.click('#player1');
+    console.log('Switched to work timer');
+    
+    // Check that work timer has the "current" class
+    const isWorkTimerActive = await page.evaluate(() => {
+      return document.getElementById('player1').classList.contains('current');
+    });
+    assert.ok(isWorkTimerActive, 'Work timer should be active after clicking it');
+    
+    await page.screenshot({ path: path.join(screenshotsDir, 'reset-test-03-work-timer-active.png') });
+    
+    // Wait for a few seconds to simulate work time
+    await page.waitForTimeout(2000);
+    console.log('Waited 2 seconds on work timer');
+    
+    // Check if the controls with reset button are visible
+    const isControlsVisible = await page.isVisible('#controls');
+    if (!isControlsVisible) {
+      // If controls aren't visible, click anywhere on the timer to show them
+      await page.click('#player1 .time');
+      await page.waitForSelector('#controls:not(.hidden)');
+    }
+    
+    // Get current times before reset
+    const workTimeBeforeReset = await page.textContent('#player1 .time');
+    const restTimeBeforeReset = await page.textContent('#player2 .time');
+    
+    console.log(`Times before reset - Work: ${workTimeBeforeReset}, Rest: ${restTimeBeforeReset}`);
+    
+    // Verify times have changed from initial times
+    assert.notStrictEqual(workTimeBeforeReset, initialWorkTime, 'Work timer time should have changed');
+    assert.notStrictEqual(restTimeBeforeReset, initialRestTime, 'Rest timer time should have changed');
+    
+    // Click the reset button
+    await page.click('#reset');
+    console.log('Clicked reset button');
+    
+    await page.screenshot({ path: path.join(screenshotsDir, 'reset-test-04-after-reset.png') });
+    
+    // Verify both timers are reset to initial times
+    const workTimeAfterReset = await page.textContent('#player1 .time');
+    const restTimeAfterReset = await page.textContent('#player2 .time');
+    
+    console.log(`Times after reset - Work: ${workTimeAfterReset}, Rest: ${restTimeAfterReset}`);
+    
+    assert.strictEqual(workTimeAfterReset, initialWorkTime, 'Work timer should be reset to initial time');
+    assert.strictEqual(restTimeAfterReset, initialRestTime, 'Rest timer should be reset to initial time');
+    
+    // Get time entries to verify they were created when switching timers and resetting
+    const timeEntries = await getTimeEntries();
+    
+    // The application tracks only work sessions, not rest sessions
+    // So we expect to find a time entry for the work session but not for the rest session
+    assert.ok(timeEntries.length >= 1, `Should have at least 1 time entry, found ${timeEntries.length}`);
+    
+    // Verify the most recent entry details (first in the list - should be the work session)
+    const entry = timeEntries[0];
+    
+    // Since we know the app only tracks work sessions, verify it's a work session entry
+    assert.strictEqual(entry.description, 'Work session', 'Entry description should be "Work session"');
+    assert.ok(entry.timeRange, 'Entry should have a time range');
+    assert.ok(entry.duration, 'Entry should have a duration');
+    
+    // Verify that the time range includes a timestmap
+    // Since we switched timers, we expect to have a time entry with our test timeframe
+    const currentDate = new Date().toLocaleDateString();
+    assert.ok(entry.timeRange.includes(currentDate), 'Time range should include today\'s date');
+    
+    // Log the entry for debugging
+    console.log(`Found time entry: 
+        Description: ${entry.description}
+        Time Range: ${entry.timeRange}
+        Duration: ${entry.duration}`);
+    
+    console.log('Reset test completed successfully!');
+  });
 });
