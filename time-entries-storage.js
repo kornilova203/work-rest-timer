@@ -96,8 +96,8 @@ class TimeEntriesStorage {
       return null;
     }
     
-    // Define CSV header - including Email column for Toggl compatibility
-    const header = ['Description', 'Start date', 'Start time', 'End date', 'End time', 'Duration', 'Email'];
+    // Define CSV header - including Email and Project columns for Toggl compatibility
+    const header = ['Description', 'Start date', 'Start time', 'End date', 'End time', 'Duration', 'Email', 'Project'];
     
     // Map entries to CSV rows
     const rows = this.localEntries.map(entry => {
@@ -120,7 +120,10 @@ class TimeEntriesStorage {
       // Get email from localStorage or use empty string
       const email = localStorage.getItem('togglEmail') || '';
       
-      // Return row with Email column, but without Project and Workspace columns
+      // Get project name from localStorage or use empty string
+      const projectName = localStorage.getItem('togglProjectName') || '';
+      
+      // Return row with Email and Project columns, but without Workspace column
       return [
         entry.description,
         startDate,
@@ -128,7 +131,8 @@ class TimeEntriesStorage {
         endDate,
         endTime,
         duration,
-        email
+        email,
+        projectName
       ];
     });
     

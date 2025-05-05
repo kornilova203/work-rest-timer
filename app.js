@@ -504,6 +504,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Toggl integration elements
   const togglWorkspaceInput = document.getElementById('toggl-workspace');
   const togglProjectInput = document.getElementById('toggl-project');
+  const togglProjectNameInput = document.getElementById('toggl-project-name');
   const togglDescriptionInput = document.getElementById('toggl-description');
   const togglExportButton = document.getElementById('toggl-export-btn');
   
@@ -532,6 +533,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load Toggl settings from localStorage
   togglWorkspaceInput.value = localStorage.getItem('togglWorkspace') || '';
   togglProjectInput.value = localStorage.getItem('togglProject') || '';
+  togglProjectNameInput.value = localStorage.getItem('togglProjectName') || '';
   togglEmailInput.value = localStorage.getItem('togglEmail') || '';
   togglDescriptionInput.value = localStorage.getItem('togglDescription') || 'Work session';
   
@@ -585,6 +587,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Save Toggl settings to localStorage
     localStorage.setItem('togglWorkspace', togglWorkspaceInput.value);
     localStorage.setItem('togglProject', togglProjectInput.value);
+    localStorage.setItem('togglProjectName', togglProjectNameInput.value);
     localStorage.setItem('togglEmail', togglEmailInput.value);
     localStorage.setItem('togglDescription', togglDescriptionInput.value);
     

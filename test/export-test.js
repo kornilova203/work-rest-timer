@@ -431,7 +431,8 @@ describe('Work-Rest Timer Export Tests', function() {
       '"End date"',
       '"End time"',
       '"Duration"',
-      '"Email"'
+      '"Email"',
+      '"Project"'
     ];
     
     // Verify the CSV has exactly the expected columns, no more and no less
