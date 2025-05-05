@@ -150,6 +150,23 @@ describe('Work-Rest Timer Visual Tests', function() {
     page.on('console', msg => console.log(`PAGE LOG: ${msg.text()}`));
   });
   
+  // Before each test
+  beforeEach(async function() {
+    // Go to the app page with fresh state
+    await page.goto(URL);
+    console.log('Loaded the application');
+    
+    // Clear any existing time entries
+    await page.evaluate(() => {
+      localStorage.removeItem('timeEntries');
+      // Optionally reload to make sure the app picks up the changes
+      window.location.reload();
+    });
+    
+    // Wait for the page to reload and initialize
+    await page.waitForLoadState('networkidle');
+  });
+  
   // Clean up after tests
   after(async function() {
     if (browser) {
@@ -162,9 +179,6 @@ describe('Work-Rest Timer Visual Tests', function() {
   
   it('should create a time entry when switching between work and rest timers', async function() {
     // This test involves browser automation and may take longer than standard unit tests
-    // Go to the app page
-    await page.goto(URL);
-    console.log('Loaded the application');
     
     // Take a screenshot of the initial state
     await page.screenshot({ path: path.join(screenshotsDir, '01-initial-state.png') });
@@ -226,5 +240,88 @@ describe('Work-Rest Timer Visual Tests', function() {
     assert.match(durationValue, /^\d+s$/, 'Duration should be in the format of "Xs" where X is a number');
     
     console.log('Test completed successfully!');
+  });
+  
+  it('should create a time entry when pausing the work timer', async function() {
+    // This test involves browser automation and may take longer than standard unit tests
+    
+    // Take a screenshot of the initial state
+    await page.screenshot({ path: path.join(screenshotsDir, 'pause-test-01-initial.png') });
+    
+    // Check that there are no entries at the start of the test
+    await assertNoTimeEntries();
+    
+    // Click on the work timer to start it
+    await page.click('#player1');
+    console.log('Clicked on work timer to start');
+    
+    // Check that work timer has the "current" class
+    const isWorkTimerActive = await page.evaluate(() => {
+      return document.getElementById('player1').classList.contains('current');
+    });
+    assert.ok(isWorkTimerActive, 'Work timer should be active after clicking it');
+    
+    await page.screenshot({ path: path.join(screenshotsDir, 'pause-test-02-work-timer-active.png') });
+    
+    // Wait for a few seconds to simulate work time
+    await page.waitForTimeout(3000);
+    console.log('Waited 3 seconds');
+    
+    // Check if the controls with pause button are visible
+    const isControlsVisible = await page.isVisible('#controls');
+    if (!isControlsVisible) {
+      // If controls aren't visible, click anywhere on the timer to show them
+      await page.click('#player1 .time');
+      await page.waitForSelector('#controls:not(.hidden)');
+    }
+    
+    // Capture the current time entries count before pausing
+    let entriesBeforePause = [];
+    try {
+      entriesBeforePause = await getTimeEntries();
+      console.log(`Found ${entriesBeforePause.length} entries before pausing`);
+    } catch (error) {
+      console.log('No entries before pausing');
+    }
+    
+    // Click the pause button
+    await page.click('#pause');
+    console.log('Clicked pause button');
+    
+    await page.screenshot({ path: path.join(screenshotsDir, 'pause-test-03-paused.png') });
+    
+    // Verify that the timer is paused
+    const isPaused = await page.evaluate(() => {
+      // Check if there's any indication of the paused state (could be a class or other attribute)
+      return !document.getElementById('player1').classList.contains('running');
+    });
+    assert.ok(isPaused, 'Timer should be paused after clicking the pause button');
+    
+    // Get time entries to verify one was created by pausing
+    const timeEntries = await getTimeEntries();
+    
+    // Assert that we have more entries after pausing than before
+    assert.ok(timeEntries.length > entriesBeforePause.length, 
+              `Expected more entries after pausing (found ${timeEntries.length}, had ${entriesBeforePause.length} before)`);
+    
+    // Verify the most recent entry details (first in the list)
+    const entry = timeEntries[0];
+    assert.strictEqual(entry.description, 'Work session', 'Entry description should be "Work session"');
+    
+    // Extract duration value
+    const durationValue = entry.duration.replace('Duration:', '').trim();
+    // Verify duration format
+    assert.match(durationValue, /^\d+s$/, 'Duration should be in the format of "Xs" where X is a number');
+    
+    // Verify the specific time entry related to the pause action
+    if (entriesBeforePause.length > 0) {
+      // Compare timestamps to verify this is a new entry
+      const previousEntryTime = entriesBeforePause[0].timeRange;
+      const currentEntryTime = entry.timeRange;
+      assert.notStrictEqual(previousEntryTime, currentEntryTime, 
+                           'The new time entry should have a different timestamp than previous entries');
+    }
+    
+    console.log('Pause test completed successfully!');
   });
 });
