@@ -512,11 +512,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize External Timer API
   ExternalTimerAPI.init();
   
-  const initialTimeInSeconds = 10 * 60; // 10 minutes in seconds
+  // Default values: 2h for work, 30m for rest
+  const workTimeInSeconds = 2 * 60 * 60; // 2 hours in seconds
+  const restTimeInSeconds = 30 * 60; // 30 minutes in seconds
   
-  // Load player-specific times in seconds if available, default to 10 minutes (600 seconds)
-  const player1TimeSeconds = parseFloat(localStorage.getItem('player1Time')) || initialTimeInSeconds;
-  const player2TimeSeconds = parseFloat(localStorage.getItem('player2Time')) || initialTimeInSeconds;
+  // Load player-specific times in seconds if available, otherwise use defaults
+  const player1TimeSeconds = parseFloat(localStorage.getItem('player1Time')) || workTimeInSeconds;
+  const player2TimeSeconds = parseFloat(localStorage.getItem('player2Time')) || restTimeInSeconds;
   
   // Initialize with saved or default times in seconds
   const workRestTimer = new WorkRestTimer(player1TimeSeconds, player2TimeSeconds);
