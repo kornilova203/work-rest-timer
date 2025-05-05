@@ -267,13 +267,6 @@ button:hover {
   padding: 20px;
 }
 
-.timer-settings-row {
-  display: flex;
-  gap: 15px;
-  margin-bottom: 20px;
-}
-
-.player-time-setting,
 .setting-input {
   margin-bottom: 15px;
   flex: 1;
@@ -282,7 +275,6 @@ button:hover {
   align-items: center;
 }
 
-.player-time-setting input,
 .setting-input input {
   width: 100%;
   padding: 10px;
@@ -293,43 +285,16 @@ button:hover {
   border-radius: 4px;
 }
 
-/* Make time inputs narrower */
-input[type="time"] {
-  width: 140px;
-  text-align: center;
-}
-
 /* Styling for placeholders */
 ::placeholder {
   color: rgba(255, 255, 255, 0.6);
   opacity: 1;
 }
 
-/* Add proper labels for time inputs */
-.player-time-setting {
-  position: relative;
-}
-
-.player-time-setting:first-child::before {
-  content: "Work";
-  display: block;
-  margin-bottom: 8px;
-  font-size: 14px;
-  opacity: 0.8;
-}
-
-.player-time-setting:last-child::before {
-  content: "Rest";
-  display: block;
-  margin-bottom: 8px;
-  font-size: 14px;
-  opacity: 0.8;
-}
 
 .time-tracking-settings {
-  margin-top: 30px;
-  padding-top: 20px;
-  border-top: 1px solid #333;
+  margin-top: 0;
+  padding-top: 0;
 }
 
 .time-tracking-settings h3 {

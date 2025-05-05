@@ -641,8 +641,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const settingsModal = document.getElementById('settings-modal');
   const closeSettingsButton = document.getElementById('close-settings');
   const saveSettingsButton = document.getElementById('save-settings');
-  const player1TimeInput = document.getElementById('player1-time');
-  const player2TimeInput = document.getElementById('player2-time');
   
   // Toggl integration elements
   const togglWorkspaceInput = document.getElementById('toggl-workspace');
@@ -658,17 +656,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const entriesList = document.getElementById('entries-list');
   const exportEntriesButton = document.getElementById('export-entries');
   const clearEntriesButton = document.getElementById('clear-entries');
-  
-  // Set initial values from localStorage - convert seconds to HH:MM:SS format
-  const setTimeInputValue = (input, seconds) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
-    input.value = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-  
-  setTimeInputValue(player1TimeInput, player1TimeSeconds);
-  setTimeInputValue(player2TimeInput, player2TimeSeconds);
   
   // Toggl email input element
   const togglEmailInput = document.getElementById('toggl-email');
@@ -703,30 +690,6 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Save settings
   saveSettingsButton.addEventListener('click', () => {
-    // Parse time values directly to seconds from HH:MM:SS format
-    const parseTimeToSeconds = (timeString) => {
-      let parts = timeString.split(':').map(v => parseInt(v) || 0);
-      
-      // Handle both HH:MM:SS and HH:MM formats
-      if (parts.length === 2) {
-        // Treat as HH:MM format
-        const [hours, minutes] = parts;
-        return (hours * 60 * 60) + (minutes * 60);
-      } else {
-        // HH:MM:SS format
-        const [hours, minutes, seconds] = parts;
-        return (hours * 60 * 60) + (minutes * 60) + seconds;
-      }
-    };
-    
-    // Get time in seconds directly
-    const player1NewTimeSeconds = parseTimeToSeconds(player1TimeInput.value);
-    const player2NewTimeSeconds = parseTimeToSeconds(player2TimeInput.value);
-    
-    // Save to localStorage in seconds
-    localStorage.setItem('player1Time', player1NewTimeSeconds);
-    localStorage.setItem('player2Time', player2NewTimeSeconds);
-    
     // Save Toggl settings to localStorage
     localStorage.setItem('togglWorkspace', togglWorkspaceInput.value);
     localStorage.setItem('togglProject', togglProjectInput.value);
@@ -734,22 +697,8 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('togglEmail', togglEmailInput.value);
     localStorage.setItem('togglDescription', togglDescriptionInput.value);
     
-    // Update the initial times for the timer models without resetting current timers
-    workRestTimer.workController.model.initialTime = player1NewTimeSeconds * 1000;
-    workRestTimer.restController.model.initialTime = player2NewTimeSeconds * 1000;
-
-    if (!workRestTimer.isRunning()) {
-      // Reset both timers to their initial values when paused
-      workRestTimer.workController.resetRemainingTime();
-      workRestTimer.restController.resetRemainingTime();
-    }
-    
     // Close the modal
     settingsModal.classList.add('hidden');
-
-    workRestTimer.workController.updateView();
-    workRestTimer.restController.updateView();
-    workRestTimer.updateButtonsVisibility();
   });
   
   // Function to render time entries list with running entry support
