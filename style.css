@@ -63,7 +63,7 @@ body {
 .controls {
   display: flex;
   justify-content: center;
-  gap: 10px;
+  gap: 20px;
   transition: opacity 0.3s;
 }
 
@@ -97,12 +97,44 @@ button {
   text-transform: uppercase;
   letter-spacing: 1px;
   opacity: 0.8;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, transform 0.2s;
   border-radius: 4px;
 }
 
 button:hover {
   opacity: 1;
+}
+
+/* Control buttons with icons */
+#reset, #pause {
+  width: 48px;
+  height: 48px;
+  padding: 12px;
+  border-radius: 50%;
+  background-color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#reset:hover, #pause:hover {
+  background-color: #444;
+  transform: scale(1.05);
+}
+
+#reset:active, #pause:active {
+  transform: scale(0.95);
+}
+
+.icon {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
+/* Make sure only one icon is shown at a time */
+.icon.hidden {
+  display: none;
 }
 
 /* Modal styles */
@@ -403,14 +435,14 @@ input[type="time"] {
   .controls-wrapper {
     flex-direction: column;
     height: auto;
-    gap: 5px;
+    gap: 8px;
     padding: 5px 0;
   }
   
   .app-buttons {
     position: static;
     transform: none;
-    margin-top: 5px;
+    margin-top: 8px;
     order: 2;
     width: 100%;
     justify-content: space-between;
@@ -418,6 +450,17 @@ input[type="time"] {
   
   .entries-button, .settings-button {
     flex: 1;
+  }
+  
+  /* Make control buttons more touch-friendly on mobile */
+  #reset, #pause {
+    width: 56px;
+    height: 56px;
+    padding: 16px;
+  }
+  
+  .controls {
+    margin: 5px 0;
   }
 }
 

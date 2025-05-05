@@ -306,6 +306,20 @@ class WorkRestTimer {
       controller.view.addVibration(() => this.isRunning());
     });
     
+    // Initialize the correct icon state
+    const pauseIcon = this.pauseButton.querySelector('.pause-icon');
+    const playIcon = this.pauseButton.querySelector('.play-icon');
+    
+    if (pauseIcon && playIcon) {
+      if (this.isRunning()) {
+        pauseIcon.classList.remove('hidden');
+        playIcon.classList.add('hidden');
+      } else {
+        pauseIcon.classList.add('hidden');
+        playIcon.classList.remove('hidden');
+      }
+    }
+    
     this.updateButtonsVisibility();
   }
 
@@ -355,7 +369,11 @@ class WorkRestTimer {
     if (!wasRunning) {
       this.startTimer();
       this.controlsElement.classList.remove('hidden');
-      this.pauseButton.textContent = 'Pause';
+      
+      // Show pause icon, hide play icon
+      this.pauseButton.querySelector('.pause-icon').classList.remove('hidden');
+      this.pauseButton.querySelector('.play-icon').classList.add('hidden');
+      this.pauseButton.setAttribute('aria-label', 'Pause');
     }
     
     this.updateButtonsVisibility();
@@ -371,7 +389,11 @@ class WorkRestTimer {
         this.timeoutId = null;
       }
       this.timer = null;
-      this.pauseButton.textContent = 'Resume';
+      
+      // Toggle to play icon when paused
+      this.pauseButton.querySelector('.pause-icon').classList.add('hidden');
+      this.pauseButton.querySelector('.play-icon').classList.remove('hidden');
+      this.pauseButton.setAttribute('aria-label', 'Resume');
       
       // Handle stop event for current controller
       if (currentController) {
@@ -380,7 +402,11 @@ class WorkRestTimer {
     } else if (currentController) {
       // Resume the timer
       this.startTimer();
-      this.pauseButton.textContent = 'Pause';
+      
+      // Toggle to pause icon when running
+      this.pauseButton.querySelector('.pause-icon').classList.remove('hidden');
+      this.pauseButton.querySelector('.play-icon').classList.add('hidden');
+      this.pauseButton.setAttribute('aria-label', 'Pause');
       
       // Handle start event for current controller
       currentController.handleStart();
@@ -400,8 +426,10 @@ class WorkRestTimer {
       this.timeoutId = null;
     }
     
-    // Reset button state
-    this.pauseButton.textContent = 'Pause';
+    // Reset button state to pause icon
+    this.pauseButton.querySelector('.pause-icon').classList.remove('hidden');
+    this.pauseButton.querySelector('.play-icon').classList.add('hidden');
+    this.pauseButton.setAttribute('aria-label', 'Pause');
     
     // Reset all controllers
     this.controllers.forEach(controller => controller.reset(wasRunning));
