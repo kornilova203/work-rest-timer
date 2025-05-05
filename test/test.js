@@ -635,4 +635,101 @@ describe('Work-Rest Timer Visual Tests', function() {
     
     console.log('Edit timer test completed successfully!');
   });
+  
+  // Test that edited timer values persist after reset and only one entry is created
+  it('Should maintain edited time after reset and create only one history entry', async function() {
+    // Take a screenshot of the initial state
+    await page.screenshot({ path: path.join(screenshotsDir, 'edit-reset-01-initial.png') });
+    
+    // Get initial time from work timer
+    const initialWorkTime = await page.textContent('#player1 .time');
+    console.log(`Initial work timer value: ${initialWorkTime}`);
+    
+    // Check that there are no entries at the start of the test
+    await assertNoTimeEntries();
+    
+    // Handle the prompt dialog to set a new time - use 8 minutes
+    page.on('dialog', async dialog => {
+      console.log(`Dialog message: ${dialog.message()}`);
+      await dialog.accept('00:08:00');
+    });
+
+    // Click edit button for work timer
+    await page.click('#edit-player1');
+    console.log('Clicked edit button for work timer');
+    
+    // Wait for the edit operation to complete
+    await page.waitForTimeout(500);
+    
+    // Get the updated time
+    const editedTime = await page.textContent('#player1 .time');
+    console.log(`Work timer value after edit: ${editedTime}`);
+    
+    // Assert that the timer has been updated
+    assert.strictEqual(editedTime, '08:00', 'Work timer should be updated to 08:00 minutes');
+    
+    // Take a screenshot of the edited timer
+    await page.screenshot({ path: path.join(screenshotsDir, 'edit-reset-02-after-edit.png') });
+    
+    // Start the work timer
+    await page.click('#player1');
+    console.log('Started work timer');
+    
+    // Check that work timer has the "current" class
+    const isWorkTimerActive = await page.evaluate(() => {
+      return document.getElementById('player1').classList.contains('current');
+    });
+    assert.ok(isWorkTimerActive, 'Work timer should be active after clicking it');
+    
+    // Wait briefly for the timer to run
+    await page.waitForTimeout(1500);
+    console.log('Waited for timer to run');
+    
+    // Take a screenshot of the running timer
+    await page.screenshot({ path: path.join(screenshotsDir, 'edit-reset-03-running.png') });
+    
+    // Check if the controls with reset button are visible
+    const isControlsVisible = await page.isVisible('#controls');
+    if (!isControlsVisible) {
+      // If controls aren't visible, click anywhere on the timer to show them
+      await page.click('#player1 .time');
+      await page.waitForSelector('#controls:not(.hidden)');
+    }
+    
+    // Click the reset button
+    await page.click('#reset');
+    console.log('Clicked reset button');
+    
+    // Wait for any UI updates to complete
+    await page.waitForTimeout(500);
+    
+    // Take a screenshot after reset
+    await page.screenshot({ path: path.join(screenshotsDir, 'edit-reset-04-after-reset.png') });
+    
+    // Get the timer value after reset
+    const timeAfterReset = await page.textContent('#player1 .time');
+    console.log(`Work timer value after reset: ${timeAfterReset}`);
+    
+    // Verify that the timer has been reset to the edited time (not the original time)
+    assert.strictEqual(timeAfterReset, editedTime, 'Work timer should reset to the edited time value of 08:00');
+    
+    // Check the time entries to verify only one entry was created
+    const timeEntries = await getTimeEntries();
+    
+    // Assert that exactly one time entry exists
+    assert.strictEqual(timeEntries.length, 1, 'There should be exactly one time entry after running and resetting the timer');
+    
+    // Verify the time entry details
+    const entry = timeEntries[0];
+    assert.strictEqual(entry.description, 'Work session', 'Entry description should be "Work session"');
+    
+    // Extract duration value
+    const durationValue = entry.duration.replace('Duration:', '').trim();
+    
+    // Verify duration format and that it's not 0 seconds
+    assert.match(durationValue, /^\d+s$/, 'Duration should be in the format of "Xs" where X is a number');
+    assert.notStrictEqual(durationValue, '0s', 'Duration should not be zero seconds');
+    
+    console.log('Edit and reset test completed successfully!');
+  });
 });

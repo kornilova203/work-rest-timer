@@ -337,13 +337,6 @@ class WorkRestTimer {
    * @param {TimerController} controller - The controller (work or rest) to edit
    */
   editTimer(controller) {
-    const wasRunning = this.isRunning();
-    
-    // If the timer is running, pause it using the existing pause method
-    if (wasRunning) {
-      this.pause();
-    }
-    
     // Get the current time for this timer
     const currentSeconds = controller.model.initialTime / 1000;
     
@@ -373,11 +366,6 @@ class WorkRestTimer {
       } catch (e) {
         alert(`Error: ${e.message}`);
       }
-    }
-    
-    // Resume the timer if it was running before
-    if (wasRunning) {
-      this.pause(); // The pause method toggles between pause/play, so calling it again will resume
     }
   }
   
@@ -414,27 +402,15 @@ class WorkRestTimer {
     // Update the model's initial time
     controller.model.initialTime = newSeconds * 1000;
     
-    // If this timer is not active or not running, also update the remaining time
-    if (!controller.isCurrent() || !this.isRunning()) {
-      controller.resetRemainingTime();
-    }
+    // Always update the remaining time, even when the timer is running
+    controller.resetRemainingTime();
     
-    // Update localStorage and settings input values based on which controller was passed
+    // Update localStorage values based on which controller was passed
     const isWorkController = controller === this.workController;
     const storageKey = isWorkController ? 'player1Time' : 'player2Time';
-    const inputId = isWorkController ? 'player1-time' : 'player2-time';
     
     // Update localStorage
     localStorage.setItem(storageKey, newSeconds);
-    
-    // Update settings input values if they exist
-    const timeInput = document.getElementById(inputId);
-    if (timeInput) {
-      const hrs = Math.floor(newSeconds / 3600);
-      const mins = Math.floor((newSeconds % 3600) / 60);
-      const secs = Math.floor(newSeconds % 60);
-      timeInput.value = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
     
     // Update the view
     controller.updateView();
