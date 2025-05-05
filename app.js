@@ -526,9 +526,13 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeInputValue(player1TimeInput, player1TimeSeconds);
   setTimeInputValue(player2TimeInput, player2TimeSeconds);
   
+  // Toggl email input element
+  const togglEmailInput = document.getElementById('toggl-email');
+
   // Load Toggl settings from localStorage
   togglWorkspaceInput.value = localStorage.getItem('togglWorkspace') || '';
   togglProjectInput.value = localStorage.getItem('togglProject') || '';
+  togglEmailInput.value = localStorage.getItem('togglEmail') || '';
   togglDescriptionInput.value = localStorage.getItem('togglDescription') || 'Work session';
   
   // Open settings modal
@@ -581,6 +585,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Save Toggl settings to localStorage
     localStorage.setItem('togglWorkspace', togglWorkspaceInput.value);
     localStorage.setItem('togglProject', togglProjectInput.value);
+    localStorage.setItem('togglEmail', togglEmailInput.value);
     localStorage.setItem('togglDescription', togglDescriptionInput.value);
     
     // Update the initial times for the timer models without resetting current timers
