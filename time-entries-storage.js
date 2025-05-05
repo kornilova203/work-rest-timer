@@ -1,11 +1,13 @@
 /**
- * TimeEntriesStorage class handles storing and retrieving time entries from localStorage
- * and providing functionality to export them to CSV format.
+ * TimeEntriesStorage class handles storing and retrieving time entries from localStorage,
+ * tracking the current time entry, and providing functionality to export entries to CSV format.
  */
 class TimeEntriesStorage {
   constructor() {
     this.localEntries = [];
+    this.currentTimeEntry = null;
     this.loadEntries();
+    this.loadCurrentEntry();
   }
   
   /**
@@ -19,6 +21,21 @@ class TimeEntriesStorage {
       } catch (e) {
         console.error('Error loading saved time entries:', e);
         this.localEntries = [];
+      }
+    }
+  }
+  
+  /**
+   * Load current time entry from localStorage if one exists
+   */
+  loadCurrentEntry() {
+    const runningEntry = localStorage.getItem('currentTimeEntry');
+    if (runningEntry) {
+      try {
+        this.currentTimeEntry = JSON.parse(runningEntry);
+      } catch (e) {
+        console.error('Error loading running time entry:', e);
+        this.currentTimeEntry = null;
       }
     }
   }
@@ -53,6 +70,75 @@ class TimeEntriesStorage {
    */
   getEntries() {
     return this.localEntries;
+  }
+  
+  /**
+   * Start a new time entry
+   * @param {string} description - Description for the time entry
+   * @param {string|number} workspaceId - Optional workspace ID
+   * @param {string|number} projectId - Optional project ID
+   * @returns {Object} - The created time entry
+   */
+  startTimeEntry(description, workspaceId, projectId) {
+    // Create a new time entry
+    this.currentTimeEntry = {
+      id: Date.now().toString(),
+      description: description || 'Work session',
+      workspace_id: workspaceId || undefined,
+      project_id: projectId || undefined,
+      start: new Date().toISOString(),
+      duration: -1, // Running timer has negative duration
+      synced: false
+    };
+    
+    // Save to localStorage
+    localStorage.setItem('currentTimeEntry', JSON.stringify(this.currentTimeEntry));
+    
+    return this.currentTimeEntry;
+  }
+  
+  /**
+   * Stop the current time entry
+   * @returns {Object|null} - The completed time entry or null if no entry was running
+   */
+  stopTimeEntry() {
+    if (!this.currentTimeEntry) return null;
+    
+    // Update with stop time and duration
+    this.currentTimeEntry.stop = new Date().toISOString();
+    this.currentTimeEntry.duration = Math.floor(
+      (new Date(this.currentTimeEntry.stop).getTime() - 
+       new Date(this.currentTimeEntry.start).getTime()) / 1000
+    );
+    
+    // Add to storage
+    this.addEntry(this.currentTimeEntry);
+    
+    // Clear from localStorage
+    localStorage.removeItem('currentTimeEntry');
+    
+    const completedEntry = {...this.currentTimeEntry};
+    
+    // Reset current entry
+    this.currentTimeEntry = null;
+    
+    return completedEntry;
+  }
+  
+  /**
+   * Check if there is a time entry currently running
+   * @returns {boolean} - True if a time entry is running
+   */
+  hasRunningTimeEntry() {
+    return this.currentTimeEntry !== null;
+  }
+  
+  /**
+   * Get the current running time entry
+   * @returns {Object|null} - The current time entry or null if none is running
+   */
+  getCurrentTimeEntry() {
+    return this.currentTimeEntry;
   }
   
   /**
