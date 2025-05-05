@@ -303,15 +303,6 @@ input[type="time"] {
   50% { opacity: 0.5; }
 }
 
-.entries-section-header {
-  margin: 15px 0 10px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #444;
-  font-size: 14px;
-  opacity: 0.8;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
 
 .entry-description {
   font-weight: bold;

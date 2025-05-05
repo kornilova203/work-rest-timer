@@ -623,7 +623,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     
-    // Check if there's a running time entry and add it at the top
+    // Check if there's a running time entry and add it at the top with the rest of entries
     if (currentEntry) {
       const runningEntryItem = document.createElement('div');
       runningEntryItem.className = 'entry-item running-entry';
@@ -662,14 +662,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // If there are no completed entries, but there is a running entry, we've already shown it
     if (entries.length === 0) {
       return;
-    }
-    
-    // Add a section header for completed entries if we have a running entry
-    if (currentEntry) {
-      const completedHeader = document.createElement('div');
-      completedHeader.className = 'entries-section-header';
-      completedHeader.textContent = 'Completed Entries';
-      entriesList.appendChild(completedHeader);
     }
     
     // Sort entries by start time, newest first
