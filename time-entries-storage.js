@@ -104,11 +104,20 @@ class TimeEntriesStorage {
       const start = new Date(entry.start);
       const stop = new Date(entry.stop);
       
-      // Format dates and times
-      const startDate = start.toISOString().split('T')[0];
-      const startTime = start.toISOString().split('T')[1].substring(0, 8);
-      const endDate = stop.toISOString().split('T')[0];
-      const endTime = stop.toISOString().split('T')[1].substring(0, 8);
+      // Format dates and times using toLocaleString with the local timezone
+      // Get date in YYYY-MM-DD format
+      const startDateLocal = start.toLocaleDateString('en-CA'); // en-CA uses YYYY-MM-DD format
+      const endDateLocal = stop.toLocaleDateString('en-CA');
+      
+      // Get time in HH:MM:SS format
+      const startTimeLocal = start.toLocaleTimeString('en-GB', { hour12: false }); // en-GB uses 24h format
+      const endTimeLocal = stop.toLocaleTimeString('en-GB', { hour12: false });
+      
+      // Use local time values
+      const startDate = startDateLocal;
+      const startTime = startTimeLocal;
+      const endDate = endDateLocal;
+      const endTime = endTimeLocal;
       
       // Format duration as HH:MM:SS
       const durationSec = entry.duration;

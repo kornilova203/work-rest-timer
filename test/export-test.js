@@ -164,6 +164,72 @@ describe('Work-Rest Timer Export Tests', function() {
     console.log('CSV columns verified successfully');
   }
   
+  /**
+   * Verifies that the times in CSV match the correct timezone
+   * @param {string} filePath - Path to the downloaded CSV file
+   */
+  async function verifyTimeFormat(filePath) {
+    console.log(`Verifying time format in ${filePath}`);
+    
+    // Read the CSV file
+    const csvContent = fs.readFileSync(filePath, 'utf8');
+    
+    // Get the lines from the CSV file
+    const lines = csvContent.trim().split(/\r?\n/);
+    if (lines.length <= 1) { // Check there's at least one data row
+      throw new Error('CSV file has no data rows');
+    }
+    
+    // Get a data row (skip the header)
+    const dataRow = lines[1];
+    const dataCells = dataRow.split(',').map(cell => cell.trim());
+    
+    // Extract time values (assuming format is standard)
+    // We expect the start time at index 2 and end time at index 4
+    const startTime = dataCells[2].replace(/"/g, ''); // Remove quotes
+    const endTime = dataCells[4].replace(/"/g, '');
+    
+    console.log('Start time in CSV:', startTime);
+    console.log('End time in CSV:', endTime);
+    
+    // Get the local timezone
+    const localTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    console.log('Local timezone:', localTimezone);
+    
+    // Times should be in the correct format (HH:MM:SS)
+    const timeRegex = /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/;
+    assert.ok(
+      timeRegex.test(startTime),
+      `Start time "${startTime}" should be in HH:MM:SS format`
+    );
+    assert.ok(
+      timeRegex.test(endTime),
+      `End time "${endTime}" should be in HH:MM:SS format`
+    );
+    
+    // Use the current page time to verify the format matches our expectations
+    const browserTime = await page.evaluate(() => {
+      const now = new Date();
+      return now.toTimeString().substring(0, 8); // HH:MM:SS
+    });
+    
+    console.log('Browser time:', browserTime);
+    
+    // Check the hour portion of the time
+    const browserHour = parseInt(browserTime.split(':')[0]);
+    const startHour = parseInt(startTime.split(':')[0]);
+    
+    // The hours should be in the same timezone - won't be exactly the same value
+    // as the CSV records are from slightly earlier, but should be in a reasonable range
+    const hourDiff = Math.abs(browserHour - startHour);
+    assert.ok(
+      hourDiff <= 1, // Allow for some time difference since test entries are created earlier
+      `CSV time hour (${startHour}) should be in a reasonable range of browser time hour (${browserHour})`
+    );
+    
+    console.log('Time format verified successfully');
+  }
+  
   // Start a local server before tests
   before(async function() {
     // Start a static file server
@@ -442,5 +508,47 @@ describe('Work-Rest Timer Export Tests', function() {
     await page.screenshot({ path: path.join(screenshotsDir, 'csv-columns-verification.png') });
     
     console.log('CSV columns verification test completed successfully!');
+  });
+  
+  it('should export time entries in CSV with correct local timezone format', async function() {
+    // Create 1 sample time entry
+    await createSampleTimeEntries(1);
+    
+    // Log the current browser time for reference
+    const browserTime = await page.evaluate(() => {
+      return {
+        timeString: new Date().toTimeString(),
+        isoString: new Date().toISOString(),
+        localeString: new Date().toLocaleString()
+      };
+    });
+    console.log('Browser time info:', browserTime);
+    
+    // Open entries modal
+    await openEntriesModal();
+    
+    // Set up download event listener
+    const downloadPromise = page.waitForEvent('download');
+    
+    // Export to CSV
+    await page.click('#export-entries');
+    console.log('Clicked export button');
+    
+    // Wait for download to start and complete
+    const download = await downloadPromise;
+    const downloadPath = path.join(downloadsDir, download.suggestedFilename());
+    await download.saveAs(downloadPath);
+    console.log(`Download saved to: ${downloadPath}`);
+    
+    // Close entries modal
+    await closeEntriesModal();
+    
+    // Verify the time format in the CSV
+    await verifyTimeFormat(downloadPath);
+    
+    // Take a screenshot after verification
+    await page.screenshot({ path: path.join(screenshotsDir, 'csv-timezone-verification.png') });
+    
+    console.log('CSV timezone verification test completed successfully!');
   });
 });
