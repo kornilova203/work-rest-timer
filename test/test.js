@@ -130,9 +130,12 @@ describe('Work-Rest Timer Visual Tests', function() {
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     // Launch the browser
+    // Check if we're running in IDE (using environment variable)
+    const isIDE = process.env.RUN_MODE === 'ide';
+    
     browser = await chromium.launch({ 
-      headless: true,  // Run in headless mode for CI environments
-      slowMo: 100       // Slow down operations slightly for stability
+      headless: !isIDE,  // Show browser when running from IDE
+      slowMo: isIDE ? 500 : 100  // Slow down more when visible for better observation
     });
     
     // Create a new browser context

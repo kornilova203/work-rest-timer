@@ -5,6 +5,7 @@
   "main": "app.js",
   "scripts": {
     "test": "mocha test/test.js --exit",
+    "test:visible": "RUN_MODE=ide mocha test/test.js --exit",
     "start": "serve ."
   },
   "keywords": [
