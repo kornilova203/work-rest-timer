@@ -24,11 +24,15 @@ describe('Work-Rest Timer Visual Tests', function() {
       const controls = document.getElementById('controls');
       const pauseButton = document.getElementById('pause');
       const resetButton = document.getElementById('reset');
+      const pauseIcon = pauseButton.querySelector('.pause-icon');
+      const playIcon = pauseButton.querySelector('.play-icon');
       
       return {
         isControlsVisible: !controls.classList.contains('hidden'),
         isPauseButtonVisible: !pauseButton.classList.contains('hidden'),
-        isResetButtonVisible: controls && !controls.classList.contains('hidden')
+        isResetButtonVisible: controls && !controls.classList.contains('hidden'),
+        isPauseIconVisible: pauseIcon && !pauseIcon.classList.contains('hidden'),
+        isPlayIconVisible: playIcon && !playIcon.classList.contains('hidden')
       };
     });
   }
@@ -577,6 +581,8 @@ describe('Work-Rest Timer Visual Tests', function() {
     assert.ok(!buttonState.isControlsVisible, 'Controls should be hidden on page load');
     assert.ok(!buttonState.isPauseButtonVisible, 'Pause button should be hidden on page load');
     assert.ok(!buttonState.isResetButtonVisible, 'Reset button should be hidden on page load');
+    assert.ok(!buttonState.isPauseIconVisible, 'Pause icon should be hidden on page load');
+    assert.ok(!buttonState.isPlayIconVisible, 'Play icon should be hidden on page load');
   });
   
   // Test that control buttons are hidden after reset
@@ -588,6 +594,8 @@ describe('Work-Rest Timer Visual Tests', function() {
     let buttonState = await checkControlButtonsVisibility();
     assert.ok(buttonState.isControlsVisible, 'Controls should be visible after starting a timer');
     assert.ok(buttonState.isPauseButtonVisible, 'Pause button should be visible after starting a timer');
+    assert.ok(buttonState.isPauseIconVisible, 'Pause icon should be visible after starting a timer');
+    assert.ok(!buttonState.isPlayIconVisible, 'Play icon should be hidden after starting a timer');
     
     // Take screenshot of visible buttons
     await page.screenshot({ path: path.join(screenshotsDir, 'buttons-visible-state.png') });
@@ -608,5 +616,7 @@ describe('Work-Rest Timer Visual Tests', function() {
     assert.ok(!buttonState.isControlsVisible, 'Controls should be hidden after reset');
     assert.ok(!buttonState.isPauseButtonVisible, 'Pause button should be hidden after reset');
     assert.ok(!buttonState.isResetButtonVisible, 'Reset button should be hidden after reset');
+    assert.ok(!buttonState.isPauseIconVisible, 'Pause icon should be hidden after reset');
+    assert.ok(!buttonState.isPlayIconVisible, 'Play icon should be hidden after reset');
   });
 });
