@@ -17,7 +17,7 @@ if (!fs.existsSync(downloadsDir)) {
 }
 
 describe('Work-Rest Timer Export Tests', function() {
-  this.timeout(60000); // Set timeout to 60 seconds for all tests in this suite
+  this.timeout(30000); // Reduced timeout to 30 seconds for all tests in this suite
   
   let browser, page, server;
   const PORT = 8081; // Using a different port than the main tests
@@ -41,7 +41,8 @@ describe('Work-Rest Timer Export Tests', function() {
     await page.click('#close-entries');
     
     try {
-      await page.waitForSelector('#entries-modal.hidden', { timeout: 3000 });
+      // Reduced timeout from 3000ms to 1500ms
+      await page.waitForSelector('#entries-modal.hidden', { timeout: 1500 });
       console.log('Entries modal closed');
     } catch (error) {
       console.log('Modal close timed out, using JavaScript to close it');
@@ -49,7 +50,8 @@ describe('Work-Rest Timer Export Tests', function() {
       await page.evaluate(() => {
         document.getElementById('entries-modal').classList.add('hidden');
       });
-      await page.waitForTimeout(500);
+      // Reduced from 500ms to 300ms
+      await page.waitForTimeout(300);
     }
   }
   
@@ -60,27 +62,33 @@ describe('Work-Rest Timer Export Tests', function() {
   async function createSampleTimeEntries(count) {
     console.log(`Creating ${count} sample time entries...`);
     
+    // Use a shorter wait time
+    const waitTime = 500; // Reduced from 1500ms
+    const delayBetweenEntries = 250; // Reduced from 500ms
+    
     for (let i = 0; i < count; i++) {
       // Start work timer
       await page.click('#player1');
       console.log(`Started work timer #${i+1}`);
       
       // Wait for a short time
-      await page.waitForTimeout(1500);
+      await page.waitForTimeout(waitTime);
       
       // Click pause to end the session
       // First make sure controls are visible
       const isControlsVisible = await page.isVisible('#controls');
       if (!isControlsVisible) {
         await page.click('#player1 .time');
-        await page.waitForSelector('#controls:not(.hidden)');
+        await page.waitForSelector('#controls:not(.hidden)', { timeout: 1000 });
       }
       
       await page.click('#pause');
       console.log(`Paused work timer #${i+1}`);
       
       // Small delay between entries
-      await page.waitForTimeout(500);
+      if (i < count - 1) { // Skip delay after the last entry
+        await page.waitForTimeout(delayBetweenEntries);
+      }
     }
     
     console.log(`Created ${count} sample time entries`);
@@ -239,24 +247,22 @@ describe('Work-Rest Timer Export Tests', function() {
       cwd: path.resolve(__dirname, '..')
     });
     
-    // Wait for server to start
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Wait for server to start - reduced from 1000ms to 500ms
+    await new Promise(resolve => setTimeout(resolve, 500));
     
     // Check if we're running in IDE (using environment variable)
     const isIDE = process.env.RUN_MODE === 'ide';
     
-    // Launch the browser
+    // Launch the browser with optimized settings
     browser = await chromium.launch({ 
       headless: !isIDE,  // Show browser when running from IDE
-      slowMo: isIDE ? 500 : 100  // Slow down more when visible for better observation
+      slowMo: isIDE ? 500 : 50  // Reduced from 100ms to 50ms for faster tests
     });
     
     // Create a new browser context with download settings
     const context = await browser.newContext({
       viewport: { width: 1200, height: 800 },
-      recordVideo: { 
-        dir: path.join(screenshotsDir, 'video')
-      },
+      // Just don't include the recordVideo option to disable video recording
       acceptDownloads: true, // Important for allowing downloads
       // Set downloads location
       downloadsPath: downloadsDir
@@ -307,14 +313,8 @@ describe('Work-Rest Timer Export Tests', function() {
     // Create 3 sample time entries
     await createSampleTimeEntries(3);
     
-    // Take a screenshot of the app with entries
-    await page.screenshot({ path: path.join(screenshotsDir, 'export-test-01-with-entries.png') });
-    
     // Open entries modal
     await openEntriesModal();
-    
-    // Screenshot of entries modal
-    await page.screenshot({ path: path.join(screenshotsDir, 'export-test-02-entries-modal.png') });
     
     // Check the export button is present
     const exportButton = await page.$('#export-entries');
@@ -352,16 +352,10 @@ describe('Work-Rest Timer Export Tests', function() {
     // Create 2 sample time entries
     await createSampleTimeEntries(2);
     
-    // Take a screenshot of the app with entries
-    await page.screenshot({ path: path.join(screenshotsDir, 'settings-export-01-with-entries.png') });
-    
     // Open settings modal
     await page.click('#settings');
     await page.waitForSelector('#settings-modal:not(.hidden)');
     console.log('Settings modal opened');
-    
-    // Screenshot of settings modal
-    await page.screenshot({ path: path.join(screenshotsDir, 'settings-export-02-settings-modal.png') });
     
     // Check the export button is present
     const exportButton = await page.$('#toggl-export-btn');
@@ -386,7 +380,8 @@ describe('Work-Rest Timer Export Tests', function() {
     // Close settings modal
     await page.click('#close-settings');
     try {
-      await page.waitForSelector('#settings-modal.hidden', { timeout: 3000 });
+      // Reduced timeout from 3000ms to 1500ms
+      await page.waitForSelector('#settings-modal.hidden', { timeout: 1500 });
       console.log('Settings modal closed');
     } catch (error) {
       console.log('Settings modal close timed out, using JavaScript to close it');
@@ -394,7 +389,8 @@ describe('Work-Rest Timer Export Tests', function() {
       await page.evaluate(() => {
         document.getElementById('settings-modal').classList.add('hidden');
       });
-      await page.waitForTimeout(500);
+      // Reduced from 500ms to 300ms
+      await page.waitForTimeout(300);
     }
     
     // Verify the CSV file exists
@@ -439,9 +435,6 @@ describe('Work-Rest Timer Export Tests', function() {
     const entryDescription = await page.textContent('.entry-description');
     assert.ok(entryDescription.includes('Custom Work Task'), 
       `Entry should have the custom description, got: ${entryDescription}`);
-    
-    // Screenshot of entries with custom description
-    await page.screenshot({ path: path.join(screenshotsDir, 'custom-desc-entries.png') });
     
     // Set up download event listener
     const downloadPromise = page.waitForEvent('download');
@@ -504,9 +497,6 @@ describe('Work-Rest Timer Export Tests', function() {
     // Verify the CSV has exactly the expected columns, no more and no less
     await verifyCSVColumns(downloadPath, expectedColumns);
     
-    // Take a screenshot after verification
-    await page.screenshot({ path: path.join(screenshotsDir, 'csv-columns-verification.png') });
-    
     console.log('CSV columns verification test completed successfully!');
   });
   
@@ -546,9 +536,6 @@ describe('Work-Rest Timer Export Tests', function() {
     // Verify the time format in the CSV
     await verifyTimeFormat(downloadPath);
     
-    // Take a screenshot after verification
-    await page.screenshot({ path: path.join(screenshotsDir, 'csv-timezone-verification.png') });
-    
     console.log('CSV timezone verification test completed successfully!');
   });
   
@@ -557,20 +544,11 @@ describe('Work-Rest Timer Export Tests', function() {
     await page.click('#player1');
     console.log('Started work timer without stopping');
     
-    // Wait a moment for the timer to register
-    await page.waitForTimeout(1000);
-    
-    // Take a screenshot before opening entries modal
-    await page.screenshot({ path: path.join(screenshotsDir, 'running-timer-before-modal.png') });
+    // Wait a minimal time for the timer to register
+    await page.waitForTimeout(300); // Further reduced from 500ms
     
     // Open entries modal
     await openEntriesModal();
-    
-    // Wait a moment for the entries to load
-    await page.waitForTimeout(500);
-    
-    // Take a screenshot of entries modal with running entry
-    await page.screenshot({ path: path.join(screenshotsDir, 'running-entry-in-modal.png') });
     
     // Check that the running entry is displayed in the entries modal
     const runningEntry = await page.$('.running-entry');
@@ -584,9 +562,9 @@ describe('Work-Rest Timer Export Tests', function() {
     const initialDuration = await page.textContent('#running-duration');
     console.log('Initial running duration:', initialDuration);
     
-    // Wait for a few seconds to see if the duration updates
+    // Wait for a shorter time to see if the duration updates
     console.log('Waiting to verify duration updates...');
-    await page.waitForTimeout(3000);
+    await page.waitForTimeout(1200); // Further reduced from 1500ms
     
     // Get the updated duration
     const updatedDuration = await page.textContent('#running-duration');
@@ -594,9 +572,6 @@ describe('Work-Rest Timer Export Tests', function() {
     
     // Verify the duration has changed
     assert.notEqual(initialDuration, updatedDuration, 'Duration should update dynamically');
-    
-    // Take a screenshot after duration update
-    await page.screenshot({ path: path.join(screenshotsDir, 'running-entry-duration-updated.png') });
     
     // Close the entries modal
     await closeEntriesModal();

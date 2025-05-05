@@ -33,7 +33,8 @@ describe('Work-Rest Timer Visual Tests', function() {
     await page.click('#close-entries');
     
     try {
-      await page.waitForSelector('#entries-modal.hidden', { timeout: 3000 });
+      // Reduced timeout from 3000ms to 1500ms
+      await page.waitForSelector('#entries-modal.hidden', { timeout: 1500 });
       console.log('Entries modal closed');
     } catch (error) {
       console.log('Modal close timed out, using JavaScript to close it');
@@ -41,7 +42,8 @@ describe('Work-Rest Timer Visual Tests', function() {
       await page.evaluate(() => {
         document.getElementById('entries-modal').classList.add('hidden');
       });
-      await page.waitForTimeout(500);
+      // Reduced from 500ms to 300ms
+      await page.waitForTimeout(300);
     }
   }
   
@@ -65,9 +67,6 @@ describe('Work-Rest Timer Visual Tests', function() {
     
     console.log('Verified: No time entries present');
     
-    // Take a screenshot of the empty entries list
-    await page.screenshot({ path: path.join(screenshotsDir, 'empty-entries.png') });
-    
     await closeEntriesModal();
   }
   
@@ -79,9 +78,6 @@ describe('Work-Rest Timer Visual Tests', function() {
     console.log('Getting time entries...');
     
     await openEntriesModal();
-    
-    // Take a screenshot of the entries list
-    await page.screenshot({ path: path.join(screenshotsDir, 'entries-list.png') });
     
     // Check if the "no entries" message is visible - if it is, return empty array
     const noEntriesVisible = await page.isVisible('.no-entries');
@@ -126,8 +122,8 @@ describe('Work-Rest Timer Visual Tests', function() {
       cwd: path.resolve(__dirname, '..')
     });
     
-    // Wait for server to start
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Wait for server to start - reduced from 1000ms to 500ms
+    await new Promise(resolve => setTimeout(resolve, 500));
     
     // Launch the browser
     // Check if we're running in IDE (using environment variable)
@@ -135,15 +131,13 @@ describe('Work-Rest Timer Visual Tests', function() {
     
     browser = await chromium.launch({ 
       headless: !isIDE,  // Show browser when running from IDE
-      slowMo: isIDE ? 500 : 100  // Slow down more when visible for better observation
+      slowMo: isIDE ? 500 : 50  // Reduced from 100ms to 50ms for faster tests
     });
     
-    // Create a new browser context
+    // Create a new browser context with optimized settings
     const context = await browser.newContext({
-      viewport: { width: 1200, height: 800 },
-      recordVideo: { 
-        dir: path.join(screenshotsDir, 'video')
-      }
+      viewport: { width: 1200, height: 800 }
+      // Omit recordVideo to disable video recording for faster tests
     });
     
     // Create a new page
@@ -203,9 +197,9 @@ describe('Work-Rest Timer Visual Tests', function() {
     
     await page.screenshot({ path: path.join(screenshotsDir, '03-work-timer-active.png') });
     
-    // Wait for a few seconds to simulate work time
-    await page.waitForTimeout(3000);
-    console.log('Waited 3 seconds');
+    // Wait for a shorter time to simulate work time
+    await page.waitForTimeout(1000); // Reduced from 3000ms
+    console.log('Waited 1 second');
     
     // Click on the rest timer to switch
     await page.click('#player2');
@@ -266,9 +260,9 @@ describe('Work-Rest Timer Visual Tests', function() {
     
     await page.screenshot({ path: path.join(screenshotsDir, 'pause-test-02-work-timer-active.png') });
     
-    // Wait for a few seconds to simulate work time
-    await page.waitForTimeout(3000);
-    console.log('Waited 3 seconds');
+    // Wait for a shorter time to simulate work time
+    await page.waitForTimeout(1000); // Reduced from 3000ms
+    console.log('Waited 1 second');
     
     // Check if the controls with pause button are visible
     const isControlsVisible = await page.isVisible('#controls');
@@ -357,9 +351,9 @@ describe('Work-Rest Timer Visual Tests', function() {
     const restTimeAfterStart = await page.textContent('#player2 .time');
     console.log(`Rest timer value after starting: ${restTimeAfterStart}`);
     
-    // Wait for a few seconds to simulate rest time
-    await page.waitForTimeout(2000);
-    console.log('Waited 2 seconds on rest timer');
+    // Wait for a shorter time to simulate rest time
+    await page.waitForTimeout(1200); // Reduced from 2000ms
+    console.log('Waited for rest timer to run');
     
     // Capture rest timer value after waiting
     const restTimeAfterWaiting = await page.textContent('#player2 .time');
@@ -457,9 +451,6 @@ describe('Work-Rest Timer Visual Tests', function() {
   });
   
   it('should reset both timers when paused and saving settings', async function() {
-    // Take a screenshot of the initial state
-    await page.screenshot({ path: path.join(screenshotsDir, 'settings-reset-01-initial.png') });
-    
     // Get initial times from both timers
     const initialWorkTime = await page.textContent('#player1 .time');
     const initialRestTime = await page.textContent('#player2 .time');
@@ -470,9 +461,9 @@ describe('Work-Rest Timer Visual Tests', function() {
     await page.click('#player1');
     console.log('Started work timer');
     
-    // Wait for a few seconds to let the timer run
-    await page.waitForTimeout(2000);
-    console.log('Waited 2 seconds on work timer');
+    // Wait for a shorter time to let the timer run (1000ms is enough to observe changes)
+    await page.waitForTimeout(1200);
+    console.log('Waited for timer to run');
     
     // Get work timer value after running
     const workTimeAfterRunning = await page.textContent('#player1 .time');
@@ -485,9 +476,9 @@ describe('Work-Rest Timer Visual Tests', function() {
     await page.click('#player2');
     console.log('Switched to rest timer');
     
-    // Wait for a few seconds to let the rest timer run
-    await page.waitForTimeout(2000);
-    console.log('Waited 2 seconds on rest timer');
+    // Wait for a shorter time to let the rest timer run (1000ms is enough to observe changes)
+    await page.waitForTimeout(1200);
+    console.log('Waited for rest timer to run');
     
     // Get rest timer value after running
     const restTimeAfterRunning = await page.textContent('#player2 .time');
@@ -509,20 +500,17 @@ describe('Work-Rest Timer Visual Tests', function() {
     await page.click('#pause');
     console.log('Clicked pause button to stop both timers');
     
-    await page.screenshot({ path: path.join(screenshotsDir, 'settings-reset-02-after-running.png') });
-    
     // Open settings modal
     await page.click('#settings');
     await page.waitForSelector('#settings-modal:not(.hidden)');
     console.log('Settings modal opened');
     
-    await page.screenshot({ path: path.join(screenshotsDir, 'settings-reset-03-settings-open.png') });
-    
     // Without changing any settings, just click Save
     await page.click('#save-settings');
     
     try {
-      await page.waitForSelector('#settings-modal.hidden', { timeout: 3000 });
+      // Reduced timeout from 3000ms to 1500ms
+      await page.waitForSelector('#settings-modal.hidden', { timeout: 1500 });
       console.log('Settings modal closed after saving');
     } catch (error) {
       console.log('Settings modal close timed out, using JavaScript to close it');
@@ -530,12 +518,11 @@ describe('Work-Rest Timer Visual Tests', function() {
       await page.evaluate(() => {
         document.getElementById('settings-modal').classList.add('hidden');
       });
-      await page.waitForTimeout(500);
+      // Reduced from 500ms to 300ms
+      await page.waitForTimeout(300);
     }
     
     console.log('Saved settings without changes');
-    
-    await page.screenshot({ path: path.join(screenshotsDir, 'settings-reset-04-after-save.png') });
     
     // Check if timer values have been reset
     const workTimeAfterSave = await page.textContent('#player1 .time');
