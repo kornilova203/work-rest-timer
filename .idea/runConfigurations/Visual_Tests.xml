@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Visual Tests" type="mocha-javascript-test-runner">
     <node-interpreter>project</node-interpreter>
@@ -11,8 +10,9 @@
     </envs>
     <ui>bdd</ui>
     <extra-mocha-options>--timeout 60000 --exit</extra-mocha-options>
-    <test-kind>PATTERN</test-kind>
-    <test-pattern>test/test.js</test-pattern>
+    <test-kind>DIRECTORY</test-kind>
+    <test-directory>$PROJECT_DIR$/test</test-directory>
+    <recursive>false</recursive>
     <method v="2" />
   </configuration>
 </component>

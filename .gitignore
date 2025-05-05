@@ -2,4 +2,6 @@
 !/.idea/runConfigurations/
 **/.claude/settings.local.json
 /test/screenshots/
+/test/downloads/*
+!/test/downloads/.gitkeep
 /node_modules/
