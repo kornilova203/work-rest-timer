@@ -4,11 +4,11 @@
   "description": "A minimalistic work-rest timer with time tracking capabilities",
   "main": "app.js",
   "scripts": {
-    "test": "mocha test/test.js --exit",
-    "test:visible": "RUN_MODE=ide mocha test/test.js --exit",
+    "test": "mocha test/*.js --exit",
+    "test:visible": "RUN_MODE=ide mocha test/*.js --exit",
     "test:export": "mocha test/export-test.js --exit",
     "test:export:visible": "RUN_MODE=ide mocha test/export-test.js --exit",
-    "test:all": "mocha test/*.js --exit",
+    "test:main": "mocha test/test.js --exit",
     "start": "serve ."
   },
   "keywords": [
