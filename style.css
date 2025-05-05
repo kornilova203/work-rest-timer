@@ -56,29 +56,46 @@ body {
   height: 60px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  padding-left: 16px;
   position: relative;
+}
+
+.all-controls {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: flex-start;
 }
 
 .controls {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 24px;
   transition: opacity 0.3s;
+  margin-right: 24px;
 }
 
 .app-buttons {
-  position: absolute;
-  right: 20px;
-  top: 50%;
-  transform: translateY(-50%);
   display: flex;
   gap: 8px;
 }
 
 .settings-button, .entries-button {
   font-size: 14px;
-  padding: 8px 15px;
+  padding: 6px 12px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.settings-button:hover, .entries-button:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  transform: scale(1.05);
+}
+
+.settings-button:active, .entries-button:active {
+  transform: scale(0.95);
 }
 
 .hidden {
@@ -441,34 +458,35 @@ input[type="time"] {
 /* Media Queries */
 @media (max-width: 600px) {
   .controls-wrapper {
-    flex-direction: column;
     height: auto;
-    gap: 8px;
-    padding: 5px 0;
+    padding: 10px 12px;
+  }
+  
+  .controls {
+    gap: 12px;
+    margin-right: 16px;
   }
   
   .app-buttons {
-    position: static;
-    transform: none;
-    margin-top: 8px;
-    order: 2;
-    width: 100%;
-    justify-content: space-between;
+    gap: 6px;
   }
   
   .entries-button, .settings-button {
-    flex: 1;
+    padding: 6px 10px;
+    font-size: 13px;
+    white-space: nowrap;
   }
   
   /* Make control buttons more touch-friendly on mobile */
   #reset, #pause {
-    width: 48px;
-    height: 48px;
-    padding: 12px;
+    width: 36px;
+    height: 36px;
+    padding: 6px;
   }
   
-  .controls {
-    margin: 5px 0;
+  .icon {
+    width: 24px;
+    height: 24px;
   }
 }
 
