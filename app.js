@@ -300,6 +300,24 @@ class WorkRestTimer {
     this.resetButton.addEventListener('click', () => this.reset());
     this.pauseButton.addEventListener('click', () => this.pause());
     
+    // Set up edit buttons for timers
+    const editPlayer1Button = document.getElementById('edit-player1');
+    const editPlayer2Button = document.getElementById('edit-player2');
+    
+    if (editPlayer1Button) {
+      editPlayer1Button.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent timer activation when clicking edit
+        this.editTimer(this.workController);
+      });
+    }
+    
+    if (editPlayer2Button) {
+      editPlayer2Button.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent timer activation when clicking edit
+        this.editTimer(this.restController);
+      });
+    }
+    
     // Set up click handlers and vibration for controllers
     this.controllers.forEach(controller => {
       // Add haptic feedback
@@ -312,6 +330,114 @@ class WorkRestTimer {
     
     // Update visibility of controls
     this.updateButtonsVisibility();
+  }
+  
+  /**
+   * Edits the timer duration for the specified controller
+   * @param {TimerController} controller - The controller (work or rest) to edit
+   */
+  editTimer(controller) {
+    const wasRunning = this.isRunning();
+    
+    // If the timer is running, pause it using the existing pause method
+    if (wasRunning) {
+      this.pause();
+    }
+    
+    // Get the current time for this timer
+    const currentSeconds = controller.model.initialTime / 1000;
+    
+    const hours = Math.floor(currentSeconds / 3600);
+    const minutes = Math.floor((currentSeconds % 3600) / 60);
+    const seconds = Math.floor(currentSeconds % 60);
+    
+    // Format the current time for display
+    const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    
+    // Use prompt dialog for all devices (mobile and desktop)
+    const isWork = controller === this.workController;
+    const result = prompt(`Enter new time for ${isWork ? 'Work' : 'Rest'} timer (hh:mm:ss):`, timeStr);
+    
+    if (result !== null && result !== '') {
+      try {
+        // Parse the time value
+        let newSeconds = this.parseTime(result);
+        
+        if (newSeconds <= 0) {
+          throw new Error('Time must be greater than zero');
+        }
+        
+        // Apply the new time
+        this.applyNewTime(controller, newSeconds);
+        
+      } catch (e) {
+        alert(`Error: ${e.message}`);
+      }
+    }
+    
+    // Resume the timer if it was running before
+    if (wasRunning) {
+      this.pause(); // The pause method toggles between pause/play, so calling it again will resume
+    }
+  }
+  
+  /**
+   * Parse time string into seconds
+   * @param {string} timeString - Time in format hh:mm:ss or hh:mm
+   * @returns {number} Total seconds
+   */
+  parseTime(timeString) {
+    // Parse time input
+    const timeParts = timeString.split(':').map(part => parseInt(part, 10) || 0);
+    let newSeconds = 0;
+    
+    if (timeParts.length === 3) {
+      // Format: hh:mm:ss
+      newSeconds = timeParts[0] * 3600 + timeParts[1] * 60 + timeParts[2];
+    } else if (timeParts.length === 2) {
+      // Format: hh:mm (standard for mobile time pickers)
+      // Always interpret as hours and minutes
+      newSeconds = timeParts[0] * 3600 + timeParts[1] * 60;
+    } else {
+      throw new Error('Invalid time format. Please use hh:mm:ss or hh:mm');
+    }
+    
+    return newSeconds;
+  }
+  
+  /**
+   * Apply the new time to the specified timer
+   * @param {TimerController} controller - The controller to update
+   * @param {number} newSeconds - New time in seconds
+   */
+  applyNewTime(controller, newSeconds) {
+    // Update the model's initial time
+    controller.model.initialTime = newSeconds * 1000;
+    
+    // If this timer is not active or not running, also update the remaining time
+    if (!controller.isCurrent() || !this.isRunning()) {
+      controller.resetRemainingTime();
+    }
+    
+    // Update localStorage and settings input values based on which controller was passed
+    const isWorkController = controller === this.workController;
+    const storageKey = isWorkController ? 'player1Time' : 'player2Time';
+    const inputId = isWorkController ? 'player1-time' : 'player2-time';
+    
+    // Update localStorage
+    localStorage.setItem(storageKey, newSeconds);
+    
+    // Update settings input values if they exist
+    const timeInput = document.getElementById(inputId);
+    if (timeInput) {
+      const hrs = Math.floor(newSeconds / 3600);
+      const mins = Math.floor((newSeconds % 3600) / 60);
+      const secs = Math.floor(newSeconds % 60);
+      timeInput.value = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    
+    // Update the view
+    controller.updateView();
   }
 
   /**

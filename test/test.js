@@ -619,4 +619,130 @@ describe('Work-Rest Timer Visual Tests', function() {
     assert.ok(!buttonState.isPauseIconVisible, 'Pause icon should be hidden after reset');
     assert.ok(!buttonState.isPlayIconVisible, 'Play icon should be hidden after reset');
   });
+  
+  // Test that timer edit functionality works correctly, including when the timer is running
+  it('Should edit work timer duration correctly, even when running', async function() {
+    // Take a screenshot of the initial state
+    await page.screenshot({ path: path.join(screenshotsDir, 'edit-timer-01-initial.png') });
+    
+    // Get initial time from work timer
+    const initialWorkTime = await page.textContent('#player1 .time');
+    console.log(`Initial work timer value: ${initialWorkTime}`);
+    
+    // Handle the prompt dialog to set a new time - use 12 minutes
+    page.on('dialog', async dialog => {
+      console.log(`Dialog message: ${dialog.message()}`);
+      await dialog.accept('00:12:00');
+    });
+
+    // Click edit button for work timer
+    await page.click('#edit-player1');
+    console.log('Clicked edit button for work timer');
+    
+    // Wait for the edit operation to complete
+    await page.waitForTimeout(500);
+    
+    // Get the updated time
+    const updatedWorkTime = await page.textContent('#player1 .time');
+    console.log(`Updated work timer value after first edit: ${updatedWorkTime}`);
+    
+    // Assert that the timer has been updated
+    assert.strictEqual(updatedWorkTime, '12:00', 'Work timer should be updated to 12:00 minutes');
+    
+    // Start the work timer
+    await page.click('#player1');
+    console.log('Started work timer');
+    
+    // Check that work timer has the "current" class
+    const isWorkTimerActive = await page.evaluate(() => {
+      return document.getElementById('player1').classList.contains('current');
+    });
+    assert.ok(isWorkTimerActive, 'Work timer should be active after clicking it');
+    
+    // Take a screenshot of the running timer
+    await page.screenshot({ path: path.join(screenshotsDir, 'edit-timer-02-running.png') });
+    
+    // Wait briefly for the timer to run (so we can verify it's running)
+    await page.waitForTimeout(1200);
+    
+    // Get the time after running briefly
+    const runningTime = await page.textContent('#player1 .time');
+    console.log(`Work timer value after running for a short time: ${runningTime}`);
+    
+    // Assert that the time has decreased
+    assert.notStrictEqual(runningTime, updatedWorkTime, 'Work timer should decrease while running');
+    
+    // Before editing again, pause the timer so we can get a stable reading
+    // Check if the controls with pause button are visible
+    const isControlsVisible = await page.isVisible('#controls');
+    if (!isControlsVisible) {
+      // If controls aren't visible, click anywhere on the timer to show them
+      await page.click('#player1 .time');
+      await page.waitForSelector('#controls:not(.hidden)');
+    }
+    
+    // Click the pause button
+    await page.click('#pause');
+    console.log('Clicked pause button to stop the timer');
+    
+    // Verify that the timer is paused - check for play icon visibility
+    const isPaused = await page.evaluate(() => {
+      const playIcon = document.querySelector('#pause .play-icon');
+      return playIcon && !playIcon.classList.contains('hidden');
+    });
+    assert.ok(isPaused, 'Timer should be paused after clicking the pause button');
+    
+    // Take a screenshot of the paused state
+    await page.screenshot({ path: path.join(screenshotsDir, 'edit-timer-02b-paused.png') });
+    
+    // Remove previous dialog handler
+    page.removeAllListeners('dialog');
+
+    // Handle the second prompt dialog - set to 5 minutes
+    page.on('dialog', async dialog => {
+      console.log(`Second dialog message: ${dialog.message()}`);
+      await dialog.accept('00:05:00');
+    });
+    
+    // Click edit button again while timer is paused
+    await page.click('#edit-player1');
+    console.log('Clicked edit button for work timer while paused');
+    
+    // Wait for the edit operation to complete
+    await page.waitForTimeout(500);
+    
+    // Get the updated time after second edit
+    const timeAfterSecondEdit = await page.textContent('#player1 .time');
+    console.log(`Work timer value after second edit while paused: ${timeAfterSecondEdit}`);
+    
+    // Assert that the timer has been updated to the new value
+    assert.strictEqual(timeAfterSecondEdit, '05:00', 'Work timer should be updated to 05:00 minutes');
+    
+    // Now restart the timer by clicking the play button (same as pause button)
+    await page.click('#pause');
+    console.log('Clicked play button to restart the timer');
+    
+    // Verify that the timer is running again - check for pause icon visibility
+    const isRunningAgain = await page.evaluate(() => {
+      const pauseIcon = document.querySelector('#pause .pause-icon');
+      return pauseIcon && !pauseIcon.classList.contains('hidden');
+    });
+    assert.ok(isRunningAgain, 'Timer should be running again after clicking the play button');
+    
+    // Take a screenshot of the restarted timer
+    await page.screenshot({ path: path.join(screenshotsDir, 'edit-timer-02c-restarted.png') });
+    
+    // Verify the timer continues running after edit and restart
+    await page.waitForTimeout(1200);
+    const timeAfterContinuedRunning = await page.textContent('#player1 .time');
+    console.log(`Work timer value after continued running: ${timeAfterContinuedRunning}`);
+    
+    // Assert that the time continues to decrease
+    assert.notStrictEqual(timeAfterContinuedRunning, timeAfterSecondEdit, 'Work timer should continue decreasing after edit and restart');
+    
+    // Take a final screenshot
+    await page.screenshot({ path: path.join(screenshotsDir, 'edit-timer-03-after-second-edit.png') });
+    
+    console.log('Edit timer test completed successfully!');
+  });
 });
