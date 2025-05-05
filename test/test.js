@@ -72,45 +72,49 @@ describe('Work-Rest Timer Visual Tests', function() {
   }
   
   /**
-   * Checks and asserts that time entries are present in the entries modal
+   * Parses and returns time entries from the entries modal
+   * @returns {Promise<Array>} Array of time entry objects with description, timeRange, and duration
    */
-  async function assertTimeEntriesExist() {
-    console.log('Checking that time entries are present...');
+  async function getTimeEntries() {
+    console.log('Getting time entries...');
     
     await openEntriesModal();
     
-    // Check that the "no entries" message is NOT visible
-    const noEntriesVisible = await page.isVisible('.no-entries');
-    assert.ok(!noEntriesVisible, 'The "No time entries yet" message should not be visible');
-    
-    // Check if there's at least one entry
-    const entryCount = await page.evaluate(() => {
-      return document.querySelectorAll('.entry-item').length;
-    });
-    assert.ok(entryCount > 0, 'At least one time entry should exist');
-    console.log(`Found ${entryCount} time entries`);
-    
-    // Check that the entry has the expected elements
-    const hasDescription = await page.isVisible('.entry-description');
-    assert.ok(hasDescription, 'Entry should have a description');
-    
-    const hasTimeRange = await page.isVisible('.entry-time');
-    assert.ok(hasTimeRange, 'Entry should have a time range');
-    
-    const hasDuration = await page.isVisible('.entry-duration');
-    assert.ok(hasDuration, 'Entry should have a duration');
-    
-    // Check if the duration is not zero
-    const durationText = await page.textContent('.entry-duration');
-    assert.ok(durationText.includes('Duration:'), 'Duration element should contain "Duration:" text');
-    assert.ok(!durationText.includes('0s'), 'Duration should not be zero seconds');
-    
-    console.log('Verified: Time entries are present');
-    
     // Take a screenshot of the entries list
-    await page.screenshot({ path: path.join(screenshotsDir, 'entries-exist.png') });
+    await page.screenshot({ path: path.join(screenshotsDir, 'entries-list.png') });
+    
+    // Check if the "no entries" message is visible - if it is, return empty array
+    const noEntriesVisible = await page.isVisible('.no-entries');
+    if (noEntriesVisible) {
+      console.log('No time entries found');
+      await closeEntriesModal();
+      return [];
+    }
+    
+    // Parse time entries from the UI
+    const entries = await page.evaluate(() => {
+      const entryElements = Array.from(document.querySelectorAll('.entry-item'));
+      return entryElements.map(entry => {
+        return {
+          description: entry.querySelector('.entry-description')?.textContent.trim() || '',
+          timeRange: entry.querySelector('.entry-time')?.textContent.trim() || '',
+          duration: entry.querySelector('.entry-duration')?.textContent.trim() || ''
+        };
+      });
+    });
+    
+    console.log(`Found ${entries.length} time entries`);
+    
+    // For debugging purposes, log the first entry details if available
+    if (entries.length > 0) {
+      console.log(`First entry: 
+        Description: ${entries[0].description}
+        Time Range: ${entries[0].timeRange}
+        Duration: ${entries[0].duration}`);
+    }
     
     await closeEntriesModal();
+    return entries;
   }
   
   // Start a local server before tests
@@ -198,9 +202,28 @@ describe('Work-Rest Timer Visual Tests', function() {
     });
     assert.ok(isRestTimerActive, 'Rest timer should be active after clicking it');
     
-    // Use our helper function to check that time entries exist
-    // (function now handles opening and closing the entries modal)
-    await assertTimeEntriesExist();
+    // Get time entries and assert that the list is not empty
+    const timeEntries = await getTimeEntries();
+    
+    // Assert that we have at least one time entry
+    assert.ok(timeEntries.length > 0, 'At least one time entry should exist');
+    
+    // Verify that the time entry has the expected format
+    const entry = timeEntries[0];
+    assert.ok(entry.description, 'Entry should have a description');
+    assert.ok(entry.timeRange, 'Entry should have a time range');
+    assert.ok(entry.duration, 'Entry should have a duration');
+    assert.ok(entry.duration.includes('Duration:'), 'Duration should include the "Duration:" text');
+    assert.ok(!entry.duration.includes('0s'), 'Duration should not be zero seconds');
+    
+    // Validate specific content
+    assert.strictEqual(entry.description, 'Work session', 'Entry description should be "Work session"');
+    assert.ok(entry.timeRange.includes('-'), 'Time range should include a hyphen between start and end times');
+    
+    // Extract duration value (e.g., "Duration: 3s" -> "3s")
+    const durationValue = entry.duration.replace('Duration:', '').trim();
+    // Verify that the duration is a number followed by 's' (for seconds)
+    assert.match(durationValue, /^\d+s$/, 'Duration should be in the format of "Xs" where X is a number');
     
     console.log('Test completed successfully!');
   });
