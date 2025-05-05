@@ -588,8 +588,9 @@ document.addEventListener('DOMContentLoaded', () => {
     workRestTimer.restController.model.initialTime = player2NewTimeSeconds * 1000;
 
     if (!workRestTimer.isRunning()) {
-      workRestTimer.workController.resetRemainingTime()
-      workRestTimer.workController.resetRemainingTime()
+      // Reset both timers to their initial values when paused
+      workRestTimer.workController.resetRemainingTime();
+      workRestTimer.restController.resetRemainingTime();
     }
     
     // Close the modal

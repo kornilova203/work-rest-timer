@@ -455,4 +455,108 @@ describe('Work-Rest Timer Visual Tests', function() {
     
     console.log('Reset test completed successfully!');
   });
+  
+  it('should reset both timers when paused and saving settings', async function() {
+    // Take a screenshot of the initial state
+    await page.screenshot({ path: path.join(screenshotsDir, 'settings-reset-01-initial.png') });
+    
+    // Get initial times from both timers
+    const initialWorkTime = await page.textContent('#player1 .time');
+    const initialRestTime = await page.textContent('#player2 .time');
+    
+    console.log(`Initial times - Work: ${initialWorkTime}, Rest: ${initialRestTime}`);
+    
+    // Start work timer first
+    await page.click('#player1');
+    console.log('Started work timer');
+    
+    // Wait for a few seconds to let the timer run
+    await page.waitForTimeout(2000);
+    console.log('Waited 2 seconds on work timer');
+    
+    // Get work timer value after running
+    const workTimeAfterRunning = await page.textContent('#player1 .time');
+    console.log(`Work timer after running: ${workTimeAfterRunning}`);
+    
+    // Verify work timer time has decreased
+    assert.notStrictEqual(workTimeAfterRunning, initialWorkTime, 'Work timer time should have decreased');
+    
+    // Start rest timer
+    await page.click('#player2');
+    console.log('Switched to rest timer');
+    
+    // Wait for a few seconds to let the rest timer run
+    await page.waitForTimeout(2000);
+    console.log('Waited 2 seconds on rest timer');
+    
+    // Get rest timer value after running
+    const restTimeAfterRunning = await page.textContent('#player2 .time');
+    console.log(`Rest timer after running: ${restTimeAfterRunning}`);
+    
+    // Verify rest timer time has decreased
+    assert.notStrictEqual(restTimeAfterRunning, initialRestTime, 'Rest timer time should have decreased');
+    
+    // Pause the timers
+    // Check if the controls with pause button are visible
+    const isControlsVisible = await page.isVisible('#controls');
+    if (!isControlsVisible) {
+      // If controls aren't visible, click anywhere on the timer to show them
+      await page.click('#player2 .time');
+      await page.waitForSelector('#controls:not(.hidden)');
+    }
+    
+    // Click the pause button
+    await page.click('#pause');
+    console.log('Clicked pause button to stop both timers');
+    
+    await page.screenshot({ path: path.join(screenshotsDir, 'settings-reset-02-after-running.png') });
+    
+    // Open settings modal
+    await page.click('#settings');
+    await page.waitForSelector('#settings-modal:not(.hidden)');
+    console.log('Settings modal opened');
+    
+    await page.screenshot({ path: path.join(screenshotsDir, 'settings-reset-03-settings-open.png') });
+    
+    // Without changing any settings, just click Save
+    await page.click('#save-settings');
+    
+    try {
+      await page.waitForSelector('#settings-modal.hidden', { timeout: 3000 });
+      console.log('Settings modal closed after saving');
+    } catch (error) {
+      console.log('Settings modal close timed out, using JavaScript to close it');
+      // Force close using JavaScript if the button click doesn't work
+      await page.evaluate(() => {
+        document.getElementById('settings-modal').classList.add('hidden');
+      });
+      await page.waitForTimeout(500);
+    }
+    
+    console.log('Saved settings without changes');
+    
+    await page.screenshot({ path: path.join(screenshotsDir, 'settings-reset-04-after-save.png') });
+    
+    // Check if timer values have been reset
+    const workTimeAfterSave = await page.textContent('#player1 .time');
+    const restTimeAfterSave = await page.textContent('#player2 .time');
+    
+    console.log(`Times after saving settings - Work: ${workTimeAfterSave}, Rest: ${restTimeAfterSave}`);
+    
+    // Verify the work timer is reset to initial time
+    assert.strictEqual(workTimeAfterSave, initialWorkTime, 'Work timer should be reset to initial time after saving settings');
+    
+    // The rest timer should also be reset when both timers are paused
+    // Currently this is failing - documenting the expected behavior
+    console.log(`The rest timer should be reset to ${initialRestTime}, but is currently ${restTimeAfterSave}`);
+    
+    // FAILING ASSERTION: This test is documenting the expected behavior, which is not currently implemented
+    // When this test passes, the application will be working as expected
+    assert.strictEqual(restTimeAfterSave, initialRestTime, 'Rest timer should also be reset to initial time after saving settings');
+    
+    // For now, document what actually happens
+    console.log('ISSUE: When paused and settings are saved, only the work timer resets, not the rest timer');
+    
+    console.log('Settings save reset test completed successfully!');
+  });
 });
