@@ -72,17 +72,17 @@ body {
   justify-content: flex-start;
 }
 
+.app-buttons {
+  display: flex;
+  gap: 8px;
+  margin-right: 24px;
+}
+
 .controls {
   display: flex;
   justify-content: flex-start;
   gap: 24px;
   transition: opacity 0.3s;
-  margin-right: 24px;
-}
-
-.app-buttons {
-  display: flex;
-  gap: 8px;
 }
 
 .settings-button, .entries-button {
@@ -468,11 +468,11 @@ input[type="time"] {
   
   .controls {
     gap: 12px;
-    margin-right: 16px;
   }
   
   .app-buttons {
     gap: 6px;
+    margin-right: 16px;
   }
   
   .entries-button, .settings-button {
