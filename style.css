@@ -74,6 +74,7 @@ body {
   align-items: center;
   justify-content: flex-start;
   padding-left: 16px;
+  padding-right: 16px;
   position: relative;
 }
 
@@ -81,7 +82,12 @@ body {
   display: flex;
   width: 100%;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-between;
+}
+
+.left-controls {
+  display: flex;
+  align-items: center;
 }
 
 .app-buttons {
@@ -90,10 +96,13 @@ body {
   margin-right: 24px;
 }
 
+.pause-button {
+  margin-left: 12px;
+}
+
 .controls {
   display: flex;
-  justify-content: flex-start;
-  gap: 24px;
+  justify-content: flex-end;
   transition: opacity 0.3s;
 }
 
@@ -479,13 +488,22 @@ input[type="time"] {
     padding: 10px 12px;
   }
   
-  .controls {
-    gap: 12px;
+  .all-controls {
+    justify-content: space-between;
+  }
+  
+  .left-controls {
+    display: flex;
+    align-items: center;
   }
   
   .app-buttons {
     gap: 6px;
-    margin-right: 16px;
+    margin-right: 12px;
+  }
+  
+  .pause-button {
+    margin-left: 8px;
   }
   
   .entries-button, .settings-button {

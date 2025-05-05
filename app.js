@@ -349,7 +349,7 @@ class WorkRestTimer {
   }
   
   updateButtonsVisibility() {
-    // Show/hide pause and reset controls based on timer state
+    // Show/hide reset control based on timer state
     if (this.isRunning() || this.hasCurrentController()) {
       this.controlsElement.classList.remove('hidden');
     } else {
