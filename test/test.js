@@ -16,6 +16,24 @@ describe('Work-Rest Timer Visual Tests', function() {
   const URL = `http://localhost:${PORT}`;
   
   /**
+   * Helper to check visibility of control buttons
+   * @returns {Promise<Object>} Object with isControlsVisible, isPauseButtonVisible, isResetButtonVisible
+   */
+  async function checkControlButtonsVisibility() {
+    return await page.evaluate(() => {
+      const controls = document.getElementById('controls');
+      const pauseButton = document.getElementById('pause');
+      const resetButton = document.getElementById('reset');
+      
+      return {
+        isControlsVisible: !controls.classList.contains('hidden'),
+        isPauseButtonVisible: !pauseButton.classList.contains('hidden'),
+        isResetButtonVisible: controls && !controls.classList.contains('hidden')
+      };
+    });
+  }
+  
+  /**
    * Opens the entries modal
    */
   async function openEntriesModal() {
@@ -545,5 +563,50 @@ describe('Work-Rest Timer Visual Tests', function() {
     console.log('ISSUE: When paused and settings are saved, only the work timer resets, not the rest timer');
     
     console.log('Settings save reset test completed successfully!');
+  });
+  
+  // Test that control buttons are hidden on page load
+  it('Should have invisible control buttons on initial page load', async function() {
+    // Take screenshot before verification
+    await page.screenshot({ path: path.join(screenshotsDir, 'buttons-initial-state.png') });
+    
+    // Check visibility of control buttons
+    const buttonState = await checkControlButtonsVisibility();
+    
+    // Assert that all control buttons are hidden
+    assert.ok(!buttonState.isControlsVisible, 'Controls should be hidden on page load');
+    assert.ok(!buttonState.isPauseButtonVisible, 'Pause button should be hidden on page load');
+    assert.ok(!buttonState.isResetButtonVisible, 'Reset button should be hidden on page load');
+  });
+  
+  // Test that control buttons are hidden after reset
+  it('Should have invisible control buttons after reset', async function() {
+    // Start a timer to make controls visible
+    await page.click('#player1');
+    
+    // Verify buttons are visible
+    let buttonState = await checkControlButtonsVisibility();
+    assert.ok(buttonState.isControlsVisible, 'Controls should be visible after starting a timer');
+    assert.ok(buttonState.isPauseButtonVisible, 'Pause button should be visible after starting a timer');
+    
+    // Take screenshot of visible buttons
+    await page.screenshot({ path: path.join(screenshotsDir, 'buttons-visible-state.png') });
+    
+    // Reset the timer
+    await page.click('#reset');
+    
+    // Wait a moment for any animations or state changes
+    await page.waitForTimeout(100);
+    
+    // Take screenshot after reset
+    await page.screenshot({ path: path.join(screenshotsDir, 'buttons-after-reset.png') });
+    
+    // Check visibility again
+    buttonState = await checkControlButtonsVisibility();
+    
+    // Assert that all control buttons are hidden after reset
+    assert.ok(!buttonState.isControlsVisible, 'Controls should be hidden after reset');
+    assert.ok(!buttonState.isPauseButtonVisible, 'Pause button should be hidden after reset');
+    assert.ok(!buttonState.isResetButtonVisible, 'Reset button should be hidden after reset');
   });
 });
