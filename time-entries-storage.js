@@ -96,8 +96,8 @@ class TimeEntriesStorage {
       return null;
     }
     
-    // Define CSV header
-    const header = ['Description', 'Start date', 'Start time', 'End date', 'End time', 'Duration', 'Project', 'Workspace'];
+    // Define CSV header - excluding Project and Workspace columns
+    const header = ['Description', 'Start date', 'Start time', 'End date', 'End time', 'Duration'];
     
     // Map entries to CSV rows
     const rows = this.localEntries.map(entry => {
@@ -117,15 +117,14 @@ class TimeEntriesStorage {
       const seconds = durationSec % 60;
       const duration = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
       
+      // Return row without Project and Workspace columns
       return [
         entry.description,
         startDate,
         startTime,
         endDate,
         endTime,
-        duration,
-        entry.project_id || '',
-        entry.workspace_id || ''
+        duration
       ];
     });
     

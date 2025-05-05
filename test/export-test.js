@@ -114,6 +114,56 @@ describe('Work-Rest Timer Export Tests', function() {
     console.log('CSV file verified successfully');
   }
   
+  /**
+   * Verifies that the CSV file contains exactly the expected columns, no more and no less
+   * @param {string} filePath - Path to the downloaded CSV file
+   * @param {string[]} expectedColumns - Array of expected column names
+   */
+  async function verifyCSVColumns(filePath, expectedColumns) {
+    console.log(`Verifying CSV columns in ${filePath}`);
+    
+    // Read the CSV file
+    const csvContent = fs.readFileSync(filePath, 'utf8');
+    
+    // Get the header line (first line)
+    const lines = csvContent.trim().split(/\r?\n/);
+    if (lines.length === 0) {
+      throw new Error('CSV file is empty');
+    }
+    
+    // Get the header line and split by comma to get columns
+    const headerLine = lines[0];
+    const actualColumns = headerLine.split(',').map(col => col.trim());
+    
+    console.log('Expected columns:', expectedColumns);
+    console.log('Actual columns:', actualColumns);
+    
+    // Check if we have exactly the expected columns (same length)
+    assert.strictEqual(
+      actualColumns.length, 
+      expectedColumns.length, 
+      `CSV should have exactly ${expectedColumns.length} columns, but got ${actualColumns.length}`
+    );
+    
+    // Check that each expected column exists
+    for (const expectedCol of expectedColumns) {
+      assert.ok(
+        actualColumns.includes(expectedCol), 
+        `CSV should include the "${expectedCol}" column, but it was not found`
+      );
+    }
+    
+    // Check that there are no unexpected columns
+    for (const actualCol of actualColumns) {
+      assert.ok(
+        expectedColumns.includes(actualCol), 
+        `CSV includes unexpected column "${actualCol}"`
+      );
+    }
+    
+    console.log('CSV columns verified successfully');
+  }
+  
   // Start a local server before tests
   before(async function() {
     // Start a static file server
@@ -347,5 +397,48 @@ describe('Work-Rest Timer Export Tests', function() {
       'CSV should include the custom description');
     
     console.log('Custom description export test completed successfully!');
+  });
+
+  it('should export CSV with exactly the expected columns and no unexpected columns', async function() {
+    // Create 2 sample time entries
+    await createSampleTimeEntries(2);
+    
+    // Open entries modal
+    await openEntriesModal();
+    
+    // Set up download event listener
+    const downloadPromise = page.waitForEvent('download');
+    
+    // Export to CSV
+    await page.click('#export-entries');
+    console.log('Clicked export button');
+    
+    // Wait for download to start and complete
+    const download = await downloadPromise;
+    const downloadPath = path.join(downloadsDir, download.suggestedFilename());
+    await download.saveAs(downloadPath);
+    console.log(`Download saved to: ${downloadPath}`);
+    
+    // Close entries modal
+    await closeEntriesModal();
+    
+    // Define the expected columns for the CSV export
+    // These are the ONLY columns that should be present, in any order
+    const expectedColumns = [
+      '"Description"',
+      '"Start date"',
+      '"Start time"',
+      '"End date"',
+      '"End time"',
+      '"Duration"'
+    ];
+    
+    // Verify the CSV has exactly the expected columns, no more and no less
+    await verifyCSVColumns(downloadPath, expectedColumns);
+    
+    // Take a screenshot after verification
+    await page.screenshot({ path: path.join(screenshotsDir, 'csv-columns-verification.png') });
+    
+    console.log('CSV columns verification test completed successfully!');
   });
 });
