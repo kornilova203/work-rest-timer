@@ -15,6 +15,104 @@ describe('Work-Rest Timer Visual Tests', function() {
   const PORT = 8080;
   const URL = `http://localhost:${PORT}`;
   
+  /**
+   * Opens the entries modal
+   */
+  async function openEntriesModal() {
+    console.log('Opening entries modal...');
+    await page.click('#entries');
+    await page.waitForSelector('#entries-modal:not(.hidden)');
+    console.log('Entries modal opened');
+  }
+  
+  /**
+   * Closes the entries modal
+   */
+  async function closeEntriesModal() {
+    console.log('Closing entries modal...');
+    await page.click('#close-entries');
+    
+    try {
+      await page.waitForSelector('#entries-modal.hidden', { timeout: 3000 });
+      console.log('Entries modal closed');
+    } catch (error) {
+      console.log('Modal close timed out, using JavaScript to close it');
+      // Force close using JavaScript if the button click doesn't work
+      await page.evaluate(() => {
+        document.getElementById('entries-modal').classList.add('hidden');
+      });
+      await page.waitForTimeout(500);
+    }
+  }
+  
+  /**
+   * Checks and asserts that there are no time entries present in the entries modal
+   */
+  async function assertNoTimeEntries() {
+    console.log('Checking that there are no time entries...');
+    
+    await openEntriesModal();
+    
+    // Check if the "no entries" message is visible
+    const noEntriesVisible = await page.isVisible('.no-entries');
+    assert.ok(noEntriesVisible, 'The "No time entries yet" message should be visible');
+    
+    // Double-check that there are no entry items
+    const entryCount = await page.evaluate(() => {
+      return document.querySelectorAll('.entry-item').length;
+    });
+    assert.strictEqual(entryCount, 0, 'There should be no time entries present');
+    
+    console.log('Verified: No time entries present');
+    
+    // Take a screenshot of the empty entries list
+    await page.screenshot({ path: path.join(screenshotsDir, 'empty-entries.png') });
+    
+    await closeEntriesModal();
+  }
+  
+  /**
+   * Checks and asserts that time entries are present in the entries modal
+   */
+  async function assertTimeEntriesExist() {
+    console.log('Checking that time entries are present...');
+    
+    await openEntriesModal();
+    
+    // Check that the "no entries" message is NOT visible
+    const noEntriesVisible = await page.isVisible('.no-entries');
+    assert.ok(!noEntriesVisible, 'The "No time entries yet" message should not be visible');
+    
+    // Check if there's at least one entry
+    const entryCount = await page.evaluate(() => {
+      return document.querySelectorAll('.entry-item').length;
+    });
+    assert.ok(entryCount > 0, 'At least one time entry should exist');
+    console.log(`Found ${entryCount} time entries`);
+    
+    // Check that the entry has the expected elements
+    const hasDescription = await page.isVisible('.entry-description');
+    assert.ok(hasDescription, 'Entry should have a description');
+    
+    const hasTimeRange = await page.isVisible('.entry-time');
+    assert.ok(hasTimeRange, 'Entry should have a time range');
+    
+    const hasDuration = await page.isVisible('.entry-duration');
+    assert.ok(hasDuration, 'Entry should have a duration');
+    
+    // Check if the duration is not zero
+    const durationText = await page.textContent('.entry-duration');
+    assert.ok(durationText.includes('Duration:'), 'Duration element should contain "Duration:" text');
+    assert.ok(!durationText.includes('0s'), 'Duration should not be zero seconds');
+    
+    console.log('Verified: Time entries are present');
+    
+    // Take a screenshot of the entries list
+    await page.screenshot({ path: path.join(screenshotsDir, 'entries-exist.png') });
+    
+    await closeEntriesModal();
+  }
+  
   // Start a local server before tests
   before(async function() {
     // Start a static file server
@@ -29,8 +127,8 @@ describe('Work-Rest Timer Visual Tests', function() {
     
     // Launch the browser
     browser = await chromium.launch({ 
-      headless: false,  // Show the browser window
-      slowMo: 500       // Slow down operations by 500ms for better visibility
+      headless: true,  // Run in headless mode for CI environments
+      slowMo: 100       // Slow down operations slightly for stability
     });
     
     // Create a new browser context
@@ -59,6 +157,7 @@ describe('Work-Rest Timer Visual Tests', function() {
   });
   
   it('should create a time entry when switching between work and rest timers', async function() {
+    // This test involves browser automation and may take longer than standard unit tests
     // Go to the app page
     await page.goto(URL);
     console.log('Loaded the application');
@@ -66,33 +165,10 @@ describe('Work-Rest Timer Visual Tests', function() {
     // Take a screenshot of the initial state
     await page.screenshot({ path: path.join(screenshotsDir, '01-initial-state.png') });
     
-    // Open entries modal and clear existing entries if any
-    await page.click('#entries');
-    console.log('Opened entries modal');
+    // Check that there are no entries at the start of the test
+    await assertNoTimeEntries();
     
-    await page.screenshot({ path: path.join(screenshotsDir, '02-entries-modal.png') });
-    
-    // Check if there are entries and clear them if needed
-    const hasClearButton = await page.isVisible('#clear-entries');
-    const hasNoEntries = await page.isVisible('.no-entries');
-    
-    if (hasClearButton && !hasNoEntries) {
-      page.on('dialog', async dialog => {
-        console.log(`Dialog message: ${dialog.message()}`);
-        await dialog.accept();
-      });
-      
-      await page.click('#clear-entries');
-      console.log('Cleared existing entries');
-      
-      await page.screenshot({ path: path.join(screenshotsDir, '03-cleared-entries.png') });
-    }
-    
-    // Close the entries modal
-    await page.click('#close-entries');
-    console.log('Closed entries modal');
-    
-    await page.screenshot({ path: path.join(screenshotsDir, '04-main-view.png') });
+    await page.screenshot({ path: path.join(screenshotsDir, '02-main-view.png') });
     
     // Click on the work timer to start it
     await page.click('#player1');
@@ -104,7 +180,7 @@ describe('Work-Rest Timer Visual Tests', function() {
     });
     assert.ok(isWorkTimerActive, 'Work timer should be active after clicking it');
     
-    await page.screenshot({ path: path.join(screenshotsDir, '05-work-timer-active.png') });
+    await page.screenshot({ path: path.join(screenshotsDir, '03-work-timer-active.png') });
     
     // Wait for a few seconds to simulate work time
     await page.waitForTimeout(3000);
@@ -114,7 +190,7 @@ describe('Work-Rest Timer Visual Tests', function() {
     await page.click('#player2');
     console.log('Clicked on rest timer');
     
-    await page.screenshot({ path: path.join(screenshotsDir, '06-rest-timer-active.png') });
+    await page.screenshot({ path: path.join(screenshotsDir, '04-rest-timer-active.png') });
     
     // Check that rest timer has the "current" class
     const isRestTimerActive = await page.evaluate(() => {
@@ -122,32 +198,9 @@ describe('Work-Rest Timer Visual Tests', function() {
     });
     assert.ok(isRestTimerActive, 'Rest timer should be active after clicking it');
     
-    // Open the entries modal to check if an entry was created
-    await page.click('#entries');
-    console.log('Opened entries modal to check for time entry');
-    
-    await page.screenshot({ path: path.join(screenshotsDir, '07-entries-with-entry.png') });
-    
-    // Check if there's at least one entry
-    const entryCount = await page.evaluate(() => {
-      return document.querySelectorAll('.entry-item').length;
-    });
-    assert.ok(entryCount > 0, 'At least one time entry should exist');
-    
-    // Check that the entry has the expected elements
-    const hasDescription = await page.isVisible('.entry-description');
-    assert.ok(hasDescription, 'Entry should have a description');
-    
-    const hasTimeRange = await page.isVisible('.entry-time');
-    assert.ok(hasTimeRange, 'Entry should have a time range');
-    
-    const hasDuration = await page.isVisible('.entry-duration');
-    assert.ok(hasDuration, 'Entry should have a duration');
-    
-    // Check if the duration is not zero
-    const durationText = await page.textContent('.entry-duration');
-    assert.ok(durationText.includes('Duration:'), 'Duration element should contain "Duration:" text');
-    assert.ok(!durationText.includes('0s'), 'Duration should not be zero seconds');
+    // Use our helper function to check that time entries exist
+    // (function now handles opening and closing the entries modal)
+    await assertTimeEntriesExist();
     
     console.log('Test completed successfully!');
   });

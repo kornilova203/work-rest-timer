@@ -4,7 +4,7 @@
   "description": "A minimalistic work-rest timer with time tracking capabilities",
   "main": "app.js",
   "scripts": {
-    "test": "mocha test/**/*.js --exit",
+    "test": "mocha test/test.js --exit",
     "start": "serve ."
   },
   "keywords": [
@@ -21,9 +21,5 @@
     "mocha": "^10.2.0",
     "playwright": "^1.40.0",
     "serve": "^14.2.1"
-  },
-  "scripts": {
-    "test": "mocha test/test.js --timeout 30000 --exit",
-    "start": "serve ."
   }
 }
