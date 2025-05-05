@@ -256,6 +256,63 @@ input[type="time"] {
   border-radius: 4px;
 }
 
+/* Running entry styling */
+.running-entry {
+  background-color: #2a3542;
+  border-left: 3px solid #4CAF50;
+  position: relative;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    background-color: #2a3542;
+  }
+  50% {
+    background-color: #334155;
+  }
+  100% {
+    background-color: #2a3542;
+  }
+}
+
+.running-badge {
+  display: inline-block;
+  padding: 3px 6px;
+  background-color: #4CAF50;
+  color: white;
+  font-size: 11px;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.running-badge::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: #fff;
+  border-radius: 50%;
+  margin-right: 5px;
+  animation: blink 1.5s infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.entries-section-header {
+  margin: 15px 0 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #444;
+  font-size: 14px;
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .entry-description {
   font-weight: bold;
   margin-bottom: 8px;

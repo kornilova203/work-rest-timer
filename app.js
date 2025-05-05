@@ -609,21 +609,73 @@ document.addEventListener('DOMContentLoaded', () => {
     workRestTimer.updateButtonsVisibility();
   });
   
-  // Function to render time entries list
+  // Function to render time entries list with running entry support
   function renderTimeEntries() {
     // We still need to use ExternalTimerAPI.storage directly here since 
     // we didn't fully implement the strategy pattern for all operations
     const entries = ExternalTimerAPI.storage.getEntries();
+    const currentEntry = ExternalTimerAPI.storage.getCurrentTimeEntry();
+    
     entriesList.innerHTML = '';
     
-    if (entries.length === 0) {
+    if (entries.length === 0 && !currentEntry) {
       entriesList.innerHTML = '<div class="no-entries">No time entries yet</div>';
       return;
+    }
+    
+    // Check if there's a running time entry and add it at the top
+    if (currentEntry) {
+      const runningEntryItem = document.createElement('div');
+      runningEntryItem.className = 'entry-item running-entry';
+      runningEntryItem.id = 'running-entry';
+      
+      const runningBadge = document.createElement('div');
+      runningBadge.className = 'running-badge';
+      runningBadge.textContent = 'Recording';
+      
+      const description = document.createElement('div');
+      description.className = 'entry-description';
+      description.textContent = currentEntry.description || 'Work session';
+      
+      const timeRange = document.createElement('div');
+      timeRange.className = 'entry-time';
+      timeRange.textContent = `${ExternalTimerAPI.storage.formatDate(currentEntry.start)} - now`;
+      
+      const duration = document.createElement('div');
+      duration.className = 'entry-duration';
+      duration.id = 'running-duration';
+      // Initial duration calculation
+      const elapsedSeconds = Math.floor((Date.now() - new Date(currentEntry.start).getTime()) / 1000);
+      duration.textContent = `Duration: ${ExternalTimerAPI.storage.formatDuration(elapsedSeconds)}`;
+      
+      runningEntryItem.appendChild(runningBadge);
+      runningEntryItem.appendChild(description);
+      runningEntryItem.appendChild(timeRange);
+      runningEntryItem.appendChild(duration);
+      
+      entriesList.appendChild(runningEntryItem);
+      
+      // Set up timer to update the duration
+      setupRunningEntryTimer();
+    }
+    
+    // If there are no completed entries, but there is a running entry, we've already shown it
+    if (entries.length === 0) {
+      return;
+    }
+    
+    // Add a section header for completed entries if we have a running entry
+    if (currentEntry) {
+      const completedHeader = document.createElement('div');
+      completedHeader.className = 'entries-section-header';
+      completedHeader.textContent = 'Completed Entries';
+      entriesList.appendChild(completedHeader);
     }
     
     // Sort entries by start time, newest first
     entries.sort((a, b) => new Date(b.start) - new Date(a.start));
     
+    // Add the completed entries
     entries.forEach(entry => {
       const entryItem = document.createElement('div');
       entryItem.className = 'entry-item';
@@ -648,6 +700,39 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   
+  // Timer variable to update running entry duration
+  let runningEntryTimer = null;
+  
+  // Set up timer to update running entry duration
+  function setupRunningEntryTimer() {
+    // Clear any existing timer
+    if (runningEntryTimer) {
+      clearInterval(runningEntryTimer);
+    }
+    
+    // Set up a new timer that updates every second
+    runningEntryTimer = setInterval(() => {
+      const currentEntry = ExternalTimerAPI.storage.getCurrentTimeEntry();
+      if (!currentEntry) {
+        // Stop the timer if no entry is running
+        clearInterval(runningEntryTimer);
+        runningEntryTimer = null;
+        return;
+      }
+      
+      // Update the duration display
+      const durationElement = document.getElementById('running-duration');
+      if (durationElement) {
+        const elapsedSeconds = Math.floor((Date.now() - new Date(currentEntry.start).getTime()) / 1000);
+        durationElement.textContent = `Duration: ${ExternalTimerAPI.storage.formatDuration(elapsedSeconds)}`;
+      } else {
+        // If the element doesn't exist, stop the timer
+        clearInterval(runningEntryTimer);
+        runningEntryTimer = null;
+      }
+    }, 1000); // Update every second
+  }
+  
   // Open entries modal
   entriesButton.addEventListener('click', () => {
     // Open entries without stopping the timer
@@ -657,6 +742,11 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Close entries modal
   closeEntriesButton.addEventListener('click', () => {
+    // Clear the timer when closing the modal
+    if (runningEntryTimer) {
+      clearInterval(runningEntryTimer);
+      runningEntryTimer = null;
+    }
     entriesModal.classList.add('hidden');
   });
   

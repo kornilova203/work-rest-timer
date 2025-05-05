@@ -551,4 +551,60 @@ describe('Work-Rest Timer Export Tests', function() {
     
     console.log('CSV timezone verification test completed successfully!');
   });
+  
+  it('should display running time entry with dynamic duration in entries modal', async function() {
+    // Start a work timer without stopping it
+    await page.click('#player1');
+    console.log('Started work timer without stopping');
+    
+    // Wait a moment for the timer to register
+    await page.waitForTimeout(1000);
+    
+    // Take a screenshot before opening entries modal
+    await page.screenshot({ path: path.join(screenshotsDir, 'running-timer-before-modal.png') });
+    
+    // Open entries modal
+    await openEntriesModal();
+    
+    // Wait a moment for the entries to load
+    await page.waitForTimeout(500);
+    
+    // Take a screenshot of entries modal with running entry
+    await page.screenshot({ path: path.join(screenshotsDir, 'running-entry-in-modal.png') });
+    
+    // Check that the running entry is displayed in the entries modal
+    const runningEntry = await page.$('.running-entry');
+    assert.ok(runningEntry, 'Running entry should be displayed in the entries modal');
+    
+    // Check that the running badge is displayed
+    const runningBadge = await page.$('.running-badge');
+    assert.ok(runningBadge, 'Running badge should be displayed on the running entry');
+    
+    // Get the running duration
+    const initialDuration = await page.textContent('#running-duration');
+    console.log('Initial running duration:', initialDuration);
+    
+    // Wait for a few seconds to see if the duration updates
+    console.log('Waiting to verify duration updates...');
+    await page.waitForTimeout(3000);
+    
+    // Get the updated duration
+    const updatedDuration = await page.textContent('#running-duration');
+    console.log('Updated running duration:', updatedDuration);
+    
+    // Verify the duration has changed
+    assert.notEqual(initialDuration, updatedDuration, 'Duration should update dynamically');
+    
+    // Take a screenshot after duration update
+    await page.screenshot({ path: path.join(screenshotsDir, 'running-entry-duration-updated.png') });
+    
+    // Close the entries modal
+    await closeEntriesModal();
+    
+    // Stop the timer
+    await page.click('#pause');
+    console.log('Stopped running timer');
+    
+    console.log('Running entry display test completed successfully!');
+  });
 });
